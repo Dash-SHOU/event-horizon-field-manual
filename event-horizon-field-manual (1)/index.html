@@ -1,0 +1,1242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A hands-on, six-module introduction to black holes: a live ray-traced black hole, real Event Horizon Telescope and LIGO data, interactive instruments, quizzes and badges.">
+<meta property="og:title" content="Event Horizon Field Manual">
+<meta property="og:description" content="Squeeze the Sun into a black hole, hear two black holes collide in real LIGO data, and see M87* rebuilt from the Event Horizon Telescope's raw observations.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/m87_2017_11apr.jpg">
+<style>[hidden]{display:none!important}img{max-width:100%}html{-webkit-text-size-adjust:100%}</style>
+<title>Event Horizon Field Manual</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script>
+window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code','canvas']}};
+</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
+<style>
+/* Layout: a ship's field manual. Sticky HUD bar on top, a live ray-traced black hole as the hero,
+   then six "modules" in one reading column (~44rem) with full-width instrument panels that read like cockpit consoles.
+   Single deliberate dark look: void black, dried-blood red, reactor orange. */
+:root{
+  --void:#050303; --hull:#0D0807; --hull-2:#150B09; --line:#3A1712; --line-2:#5A2018;
+  --ink:#F2E7DE; --ink-2:#A8928A; --ink-3:#6E5A53;
+  --ember:#FF6A1A;      /* reactor orange: primary accent */
+  --flare:#FFC23D;      /* golden glitter highlight */
+  --gold:#FFD84D;
+  --blood:#8E1018;      /* dark red: structure, panels */
+  --crimson:#E0302A;    /* alerts, quantum / heat */
+  --ok:#7FDFA6;
+  --f-disp:"Fredoka","Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Nunito","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:70px}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:18px;line-height:1.6;margin:0;
+  background-image:
+    radial-gradient(1200px 600px at 80% -10%, color-mix(in srgb,var(--blood) 35%,transparent), transparent 70%),
+    linear-gradient(color-mix(in srgb,var(--line) 35%,transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb,var(--line) 35%,transparent) 1px, transparent 1px);
+  background-size:auto,48px 48px,48px 48px;background-attachment:fixed,scroll,scroll}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--void)}
+a{color:var(--flare);text-underline-offset:3px}
+a:hover{color:var(--ember)}
+:focus-visible{outline:2px solid var(--flare);outline-offset:2px}
+p{margin:0 0 14px}
+.wrap{max-width:72rem;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.col{max-width:46rem}
+mjx-container[display="true"]{overflow-x:auto;overflow-y:hidden}
+
+/* ---------- HUD bar ---------- */
+.hud{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:color-mix(in srgb,var(--void) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.hud .wrap{display:flex;align-items:center;gap:18px;padding-block:10px}
+.logo{font-family:var(--f-disp);font-weight:700;letter-spacing:.12em;font-size:15px;color:var(--ink);text-decoration:none;white-space:nowrap}
+.logo b{color:var(--ember)}
+.hud nav{display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.hud nav::-webkit-scrollbar{display:none}
+.hud nav a{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);text-decoration:none;padding:5px 9px;border:1px solid transparent;white-space:nowrap}
+.hud nav a:hover{color:var(--flare);border-color:var(--line-2)}
+.hud nav a.done::after{content:"◆";color:var(--ember);margin-left:5px;font-size:9px;vertical-align:1px}
+.sync{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);white-space:nowrap;display:flex;align-items:center;gap:8px}
+.sync .bar{width:70px;height:6px;background:var(--hull-2);border:1px solid var(--line-2);position:relative}
+.sync .bar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--blood),var(--ember));width:0;transition:width .5s}
+
+/* ---------- hero ---------- */
+.hero{position:relative;border-bottom:1px solid var(--line);overflow:hidden;background:#000}
+.hero canvas{display:block;width:100%;height:clamp(420px,62vw,640px);cursor:grab;touch-action:pan-y}
+.hero canvas:active{cursor:grabbing}
+.hero-fallback{position:absolute;inset:0;background:radial-gradient(circle at 50% 52%,#000 0 13%,var(--flare) 14%,var(--ember) 17%,var(--blood) 24%,transparent 40%),#000}
+.hero .scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+.hero-copy{position:absolute;left:0;right:0;bottom:0;pointer-events:none;background:linear-gradient(0deg,rgba(5,3,3,.92) 8%,transparent 70%)}
+@media (min-width:900px){.hero-copy{top:0;display:flex;align-items:flex-end;background:linear-gradient(90deg,rgba(5,3,3,.88) 0%,rgba(5,3,3,.55) 38%,transparent 62%)}.hero-copy .wrap{width:100%}.hero .sub{max-width:31rem}.hero h1{font-size:clamp(42px,6.6vw,96px)}}
+.hero-copy .wrap{padding-block:28px 34px}
+.kicker{font-family:var(--f-mono);font-size:12.5px;letter-spacing:.14em;color:var(--ember);margin:0 0 10px}
+.hero h1{font-family:var(--f-disp);font-weight:700;font-size:clamp(42px,8.4vw,104px);line-height:.9;letter-spacing:.02em;margin:0 0 14px;text-transform:uppercase;text-wrap:balance;text-shadow:0 0 28px color-mix(in srgb,var(--ember) 45%,transparent)}
+.hero h1 span{display:block;color:transparent;-webkit-text-stroke:1.5px var(--ember);text-shadow:none}
+.hero .sub{max-width:38rem;font-size:19px;color:var(--ink);margin:0 0 18px}
+.hero .cta{pointer-events:auto;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.btn{font-family:var(--f-disp);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:14px;background:var(--ember);color:#120604;border:0;padding:12px 20px;cursor:pointer;text-decoration:none;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn:hover{background:var(--flare);color:#120604}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line-2)}
+.btn.ghost:hover{color:var(--flare)}
+.hint{font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
+.hero-tag{position:absolute;top:16px;right:max(16px,env(safe-area-inset-right,0px));font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);text-align:right;line-height:1.7;pointer-events:none}
+.hero-tag b{color:var(--ember);font-weight:500}
+@media (prefers-reduced-motion:no-preference){ .hero h1{animation:flick 6s infinite} @keyframes flick{0%,96%,100%{opacity:1}97%{opacity:.82}98%{opacity:1}99%{opacity:.9}} }
+
+/* ---------- how it works ---------- */
+.howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:40px 0 10px}
+.howto div{background:var(--hull);padding:18px 18px 16px}
+.howto .t{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.12em;color:var(--ember);margin:0 0 6px}
+.howto h3{font-family:var(--f-disp);font-size:19px;margin:0 0 4px;font-weight:600}
+.howto p{font-size:15.5px;color:var(--ink-2);margin:0}
+
+/* ---------- modules ---------- */
+.module{padding-block:72px 24px;border-bottom:1px solid var(--line)}
+.mhead{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 24px;align-items:end;margin-bottom:26px}
+.mnum{font-family:var(--f-disp);font-weight:700;font-size:clamp(76px,13vw,150px);line-height:.8;color:transparent;-webkit-text-stroke:1.5px var(--ember);grid-row:span 2}
+.mlabel{font-family:var(--f-mono);font-size:12.5px;letter-spacing:.14em;color:var(--ink-2);margin:0}
+.module h2{font-family:var(--f-disp);font-weight:700;font-size:clamp(30px,4.6vw,50px);line-height:1.02;margin:0;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance}
+.brief{border-left:2px solid var(--ember);padding:4px 0 4px 18px;margin:0 0 26px;font-size:21px;line-height:1.45;color:var(--ink);max-width:42rem}
+.brief small{display:block;font-family:var(--f-mono);font-size:11.5px;letter-spacing:.14em;color:var(--ember);margin-bottom:4px}
+.module h3{font-family:var(--f-disp);font-weight:600;font-size:23px;margin:34px 0 10px;letter-spacing:.01em}
+.big{font-family:var(--f-disp);font-weight:600;color:var(--flare)}
+
+/* intercepted signal / fact box */
+.signal{border:1px dashed var(--line-2);background:color-mix(in srgb,var(--blood) 14%,transparent);padding:14px 18px;margin:20px 0;font-size:16.5px}
+.signal b.t{display:block;font-family:var(--f-mono);font-weight:500;font-size:11.5px;letter-spacing:.14em;color:var(--crimson);margin-bottom:4px}
+
+/* ---------- instrument panel ---------- */
+.inst{position:relative;background:linear-gradient(180deg,var(--hull-2),var(--hull));border:1px solid var(--line-2);margin:26px 0;padding:0}
+.inst::before,.inst::after{content:"";position:absolute;width:18px;height:18px;border:2px solid var(--ember);pointer-events:none}
+.inst::before{top:-2px;left:-2px;border-right:0;border-bottom:0}
+.inst::after{bottom:-2px;right:-2px;border-left:0;border-top:0}
+.ihead{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;color:var(--ink-2);flex-wrap:wrap}
+.ihead .led{width:8px;height:8px;border-radius:50%;background:var(--ember);box-shadow:0 0 8px var(--ember)}
+@media (prefers-reduced-motion:no-preference){.ihead .led{animation:pulse 2.4s infinite}@keyframes pulse{50%{opacity:.35}}}
+.ihead b{color:var(--ink);font-weight:500}
+.ibody{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:0}
+.ibody.one{grid-template-columns:minmax(0,1fr)}
+.screen{position:relative;border-right:1px solid var(--line);background:#070404;min-width:0}
+.screen canvas{display:block;width:100%;height:auto}
+.ctl{padding:16px 18px;display:grid;gap:12px;align-content:start;min-width:0}
+.ctl label{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--ink-2);display:flex;justify-content:space-between;gap:10px}
+.ctl label output{color:var(--flare)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:linear-gradient(90deg,var(--blood),var(--ember));}
+input[type=range]::-moz-range-track{height:4px;background:linear-gradient(90deg,var(--blood),var(--ember))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-6px;background:var(--void);border:2px solid var(--flare);transform:rotate(45deg)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;background:var(--void);border:2px solid var(--flare);border-radius:0;transform:rotate(45deg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:12px;background:transparent;color:var(--ink-2);border:1px solid var(--line-2);padding:5px 10px;cursor:pointer}
+.chip:hover{color:var(--flare);border-color:var(--ember)}
+.chip[aria-pressed="true"]{background:var(--ember);color:#120604;border-color:var(--ember)}
+.read{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.read>div{border:1px solid var(--line);padding:8px 10px;background:#090505}
+.read .l{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink-3);text-transform:uppercase}
+.read .v{font-family:var(--f-mono);font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.read .v.hot{color:var(--flare)}
+.status{font-family:var(--f-mono);font-size:13px;padding:10px 12px;border:1px solid var(--line-2);color:var(--ink)}
+.status.alert{border-color:var(--crimson);color:#FFD9D4;background:color-mix(in srgb,var(--crimson) 18%,transparent)}
+.status.good{border-color:color-mix(in srgb,var(--ok) 60%,var(--line));background:color-mix(in srgb,var(--ok) 10%,transparent)}
+.ifoot{border-top:1px solid var(--line);padding:10px 16px;font-size:15px;color:var(--ink-2)}
+@media (max-width:760px){.ibody{grid-template-columns:minmax(0,1fr)}.screen{border-right:0;border-bottom:1px solid var(--line)}}
+
+/* ---------- timeline ---------- */
+.log{list-style:none;margin:18px 0;padding:0;border-left:1px solid var(--line-2)}
+.log li{position:relative;padding:4px 0 12px 22px;font-size:16px}
+.log li::before{content:"";position:absolute;left:-5px;top:12px;width:9px;height:9px;background:var(--void);border:2px solid var(--ember);transform:rotate(45deg)}
+.log time{font-family:var(--f-mono);color:var(--flare);margin-right:10px;font-size:14px}
+
+/* ---------- go deeper ---------- */
+details.deep{border:1px solid var(--line-2);margin:22px 0;background:var(--hull)}
+details.deep summary{cursor:pointer;list-style:none;padding:12px 16px;font-family:var(--f-mono);font-size:13px;letter-spacing:.1em;color:var(--ember)}
+details.deep summary::before{content:"[+] "}
+details.deep[open] summary::before{content:"[–] "}
+details.deep>div{padding:4px 18px 14px;font-size:16.5px}
+
+/* ---------- quiz ---------- */
+.calib{border:1px solid var(--line-2);background:var(--hull);margin:30px 0 10px}
+.calib .ihead{justify-content:space-between}
+.qwrap{padding:14px 16px;display:grid;gap:16px}
+.q p.s{font-weight:600;margin:0 0 8px}
+.q .opts{display:grid;gap:6px}
+.q button{text-align:left;font:inherit;font-size:16px;background:#0A0606;color:var(--ink);border:1px solid var(--line);padding:9px 12px;cursor:pointer}
+.q button:hover:not([disabled]){border-color:var(--ember)}
+.q button.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}
+.q button.no{border-color:var(--crimson);background:color-mix(in srgb,var(--crimson) 14%,transparent)}
+.q button[disabled]{cursor:default}
+.q .fb{font-size:15px;color:var(--ink-2);margin-top:6px}
+.badge-msg{font-family:var(--f-mono);font-size:12.5px;color:var(--ink-2)}
+.badge-msg.won{color:var(--ok)}
+
+/* ---------- frontier cards / badges ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:20px 0}
+.card{border:1px solid var(--line-2);background:var(--hull);padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.card .t{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;color:var(--ember)}
+.card h4{font-family:var(--f-disp);font-size:20px;margin:0;font-weight:600}
+.card p{font-size:15.5px;color:var(--ink-2);margin:0}
+.badges{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:22px 0}
+.bdg{border:1px solid var(--line);padding:14px;text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--ink-3)}
+.bdg .ic{font-family:var(--f-disp);font-size:30px;font-weight:700;display:block;color:var(--ink-3);margin-bottom:4px}
+.bdg.on{border-color:var(--ember);color:var(--ink);box-shadow:0 0 18px color-mix(in srgb,var(--ember) 25%,transparent) inset}
+.bdg.on .ic{color:var(--ember)}
+.src{font-size:15px;color:var(--ink-2);padding-left:20px}
+.src li{margin-bottom:6px}
+footer{padding-block:40px 60px;font-family:var(--f-mono);font-size:12px;color:var(--ink-3)}
+
+/* ---------- roadmap ---------- */
+.route{padding-block:56px 10px}
+.route-h{font-family:var(--f-disp);font-weight:700;font-size:clamp(28px,4.2vw,46px);line-height:1.05;margin:0 0 14px;text-transform:uppercase;text-wrap:balance;max-width:52rem}
+.stations{list-style:none;margin:30px 0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;position:relative}
+.stations::before{content:"";position:absolute;left:0;right:0;top:27px;height:2px;background:linear-gradient(90deg,var(--blood),var(--ember),var(--crimson))}
+.stations li{position:relative;min-width:0}
+.stations a{display:flex;flex-direction:column;gap:6px;padding:0 12px 0 0;color:var(--ink);text-decoration:none}
+.stations .sn{width:56px;height:56px;display:grid;place-items:center;background:var(--void);border:2px solid var(--ember);font-family:var(--f-disp);font-weight:700;font-size:22px;color:var(--ember);clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);position:relative;z-index:1}
+.stations a:hover .sn{background:var(--ember);color:#120604}
+.stations b{font-family:var(--f-disp);font-size:18px;line-height:1.15;margin-top:6px}
+.stations .sq{font-size:15px;color:var(--ink-2);line-height:1.45}
+.stations .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+.stations .tags i{font-style:normal;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.04em;color:var(--flare);border:1px solid var(--line-2);padding:2px 6px}
+.stations .tags i.real{color:#120604;background:var(--ember);border-color:var(--ember)}
+@media (max-width:980px){.stations{grid-template-columns:minmax(0,1fr);gap:22px}.stations::before{left:27px;right:auto;top:0;bottom:0;width:2px;height:auto;background:linear-gradient(180deg,var(--blood),var(--ember),var(--crimson))}
+  .stations a{display:grid;grid-template-columns:56px minmax(0,1fr);column-gap:16px;padding:0}.stations .sn{grid-row:span 4}.stations b{margin-top:0}}
+.outgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:22px;margin:10px 0 0}
+@media (max-width:860px){.outgrid{grid-template-columns:minmax(0,1fr)}}
+.outcomes,.needs{border:1px solid var(--line-2);background:var(--hull);padding:18px 22px}
+.outcomes h3,.needs h3{font-family:var(--f-disp);font-size:21px;margin:0 0 10px}
+.outcomes ol{margin:0;padding-left:0;list-style:none;counter-reset:o;display:grid;gap:9px}
+.outcomes li{counter-increment:o;position:relative;padding-left:34px;font-size:16.5px}
+.outcomes li::before{content:counter(o,decimal-leading-zero);position:absolute;left:0;top:2px;font-family:var(--f-mono);font-size:12px;color:var(--ember)}
+.needs dl{margin:0;display:grid;gap:10px}
+.needs dt{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.12em;color:var(--ember)}
+.needs dd{margin:0;font-size:16px;color:var(--ink)}
+/* ---------- archive ---------- */
+.archive{border-top:1px solid var(--line-2);margin:34px 0 10px;padding-top:16px}
+.archive>p.t{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;color:var(--crimson);margin:0 0 12px}
+.agrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+figure.media{margin:0;border:1px solid var(--line-2);background:#000;display:flex;flex-direction:column}
+figure.media.wide{grid-column:1/-1}
+figure.media img{display:block;width:100%;height:auto;max-width:100%}
+figure.media figcaption{padding:10px 14px 12px;font-size:15px;color:var(--ink-2);border-top:1px solid var(--line);background:var(--hull)}
+figure.media figcaption b{color:var(--ink);font-weight:600}
+figure.media .cr{display:block;font-family:var(--f-mono);font-size:11px;color:var(--ink-3);margin-top:6px}
+.realtag{display:inline-block;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;background:var(--ember);color:#120604;padding:2px 7px;margin-right:6px;vertical-align:2px}
+a.mlink{display:flex;flex-direction:column;gap:5px;border:1px solid var(--line-2);background:var(--hull);padding:14px 16px;color:var(--ink);text-decoration:none;position:relative}
+a.mlink:hover{border-color:var(--ember);color:var(--ink)}
+a.mlink::after{content:"↗";position:absolute;top:12px;right:14px;color:var(--ember);font-size:16px}
+a.mlink .k{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.12em;color:var(--flare)}
+a.mlink b{font-family:var(--f-disp);font-size:17px;font-weight:600;line-height:1.2;padding-right:20px}
+a.mlink span.d{font-size:14.5px;color:var(--ink-2)}
+a.mlink span.s{font-family:var(--f-mono);font-size:11px;color:var(--ink-3)}
+.audiorow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--hull)}
+
+/* ================= cartoon layer: sticker panels, glitter, rounded type ================= */
+body{background-color:var(--void);
+  background-image:
+    radial-gradient(1100px 600px at 82% -8%, color-mix(in srgb,var(--blood) 40%,transparent), transparent 70%),
+    radial-gradient(1.6px 1.6px at 12px 18px, rgba(255,216,77,.55), transparent 60%),
+    radial-gradient(1.2px 1.2px at 70px 90px, rgba(255,240,220,.5), transparent 60%),
+    radial-gradient(1px 1px at 140px 40px, rgba(255,160,80,.55), transparent 60%),
+    radial-gradient(1.4px 1.4px at 190px 150px, rgba(255,240,220,.4), transparent 60%);
+  background-size:auto,160px 160px,210px 210px,170px 170px,240px 240px;background-attachment:fixed,scroll,scroll,scroll,scroll}
+.hero .scan{display:none}
+.logo{font-family:var(--f-disp);letter-spacing:.04em;font-size:19px}
+.hud nav a{font-family:var(--f-disp);font-size:14px;border-radius:999px}
+.kicker,.mlabel,.brief small,.howto .t,.ihead,.signal b.t,.archive>p.t,.card .t,a.mlink .k,.needs dt,.calib .ihead{font-family:var(--f-disp);font-weight:600;letter-spacing:.06em}
+.hero h1{text-transform:none;letter-spacing:0;font-weight:700;line-height:.95;text-shadow:4px 4px 0 var(--blood),0 0 30px color-mix(in srgb,var(--ember) 40%,transparent)}
+.hero h1 span{color:var(--gold);-webkit-text-stroke:0;text-shadow:4px 4px 0 var(--blood)}
+.module h2,.route-h{text-transform:none;letter-spacing:0;font-weight:700}
+.module h3{font-weight:600}
+.mnum{color:var(--gold);-webkit-text-stroke:0;text-shadow:6px 6px 0 var(--blood);transform:rotate(-4deg);display:inline-block}
+.brief{border-left:0;border-radius:18px;background:color-mix(in srgb,var(--blood) 22%,transparent);padding:14px 20px;border:2px dashed var(--line-2)}
+.btn{clip-path:none;border-radius:999px;text-transform:none;letter-spacing:.02em;font-size:16px;box-shadow:0 4px 0 var(--blood);transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.ghost{box-shadow:inset 0 0 0 2px var(--line-2),0 4px 0 var(--blood)}
+.chip{border-radius:999px;font-family:var(--f-disp);font-size:13.5px;border-width:2px}
+.inst,.calib,details.deep,.outcomes,.needs,.card,a.mlink,figure.media,.signal,.howto,.status,.bdg{border-radius:18px}
+.inst,.calib,details.deep,.outcomes,.needs,.card,a.mlink,figure.media,.howto{border-width:2px;box-shadow:5px 5px 0 color-mix(in srgb,var(--blood) 70%,transparent)}
+.inst,.calib,figure.media,.howto{overflow:hidden}
+.read>div,.status,.q button{border-radius:12px}
+.inst::before,.inst::after{content:"✦";border:0;width:auto;height:auto;color:var(--gold);font-size:20px;line-height:1;text-shadow:0 0 10px var(--gold)}
+.inst::before{top:8px;left:auto;right:14px}
+.inst::after{display:none}
+.ihead .led{background:var(--gold);box-shadow:0 0 10px var(--gold)}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:99px}
+input[type=range]::-moz-range-track{height:6px;border-radius:99px}
+input[type=range]::-webkit-slider-thumb{width:20px;height:20px;margin-top:-7px;border-radius:50%;transform:none;background:var(--gold);border:3px solid var(--void);box-shadow:0 0 0 2px var(--gold),0 0 12px var(--gold)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;transform:none;background:var(--gold);border:3px solid var(--void)}
+.stations .sn{clip-path:none;border-radius:50%;border-width:3px;border-color:var(--gold);color:var(--gold);box-shadow:3px 3px 0 var(--blood)}
+.stations::before{height:3px;border-radius:3px;background:repeating-linear-gradient(90deg,var(--ember) 0 10px,transparent 10px 16px)}
+@media (max-width:980px){.stations::before{width:3px;height:auto;background:repeating-linear-gradient(180deg,var(--ember) 0 10px,transparent 10px 16px)}}
+.stations .tags i,.realtag{border-radius:999px}
+.howto{background:var(--hull)}
+.howto div{border-right:2px dashed var(--line)}
+.log li::before{border-radius:50%;transform:none;border-color:var(--gold)}
+.bdg.on{box-shadow:0 0 18px color-mix(in srgb,var(--gold) 30%,transparent) inset,4px 4px 0 var(--blood)}
+details.deep summary{font-family:var(--f-disp);font-weight:600;font-size:15px}
+details.deep summary::before{content:"✦ ";color:var(--gold)}
+details.deep[open] summary::before{content:"✧ "}
+.q p.s{font-family:var(--f-disp);font-weight:500;font-size:18px}
+.hero-tag{font-family:var(--f-disp)}
+.status{font-family:var(--f-body);font-size:15px}
+.ctl label,.hint,.read .l{font-family:var(--f-disp);letter-spacing:.03em}
+.read .l{text-transform:none;font-size:12px}
+</style>
+</head>
+<body>
+
+
+<header class="hud">
+  <div class="wrap">
+    <a class="logo" href="#top">EH<b>//</b>FM</a>
+    <nav aria-label="Modules">
+      <a href="#m1" data-m="1">01 What</a><a href="#m2" data-m="2">02 Birth</a><a href="#m3" data-m="3">03 Detect</a><a href="#m4" data-m="4">04 Spin</a><a href="#m5" data-m="5">05 Quantum</a><a href="#m6" data-m="6">06 Frontier</a>
+    </nav>
+    <div class="sync">SYNC <span class="bar"><i id="syncBar"></i></span> <span id="syncN">0/6</span></div>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="hero-fallback" id="heroFallback" hidden></div>
+  <canvas id="bh" aria-label="Live ray-traced black hole with a glowing accretion disk. Drag to orbit the camera."></canvas>
+  <div class="scan"></div>
+  <div class="hero-tag">LIVE RENDER · <b>SCHWARZSCHILD</b><br>LIGHT RAYS BENT BY GRAVITY, TRACED PER PIXEL<br><span id="fps">—</span></div>
+  <div class="hero-copy">
+    <div class="wrap">
+      <p class="kicker">FIELD MANUAL · SIX MODULES · ABOUT 2 HOURS</p>
+      <h1>Event Horizon <span>Field Manual</span></h1>
+      <p class="sub">A hands-on guide to the strangest objects in the universe. Squeeze the Sun until light can’t escape, hear two black holes collide, weigh the monster at the centre of our galaxy, and watch one evaporate.</p>
+      <div class="cta"><a class="btn" href="#m1">Begin descent</a><span class="hint">Drag the image to fly around the black hole</span></div>
+    </div>
+  </div>
+</section>
+
+<main class="wrap">
+
+  <section class="route" id="route">
+    <p class="kicker">YOUR ROUTE</p>
+    <h2 class="route-h">Six stops, from “what is it?” to the edge of physics</h2>
+    <p class="col">You don’t need any maths beyond school level. Each stop starts with one question, gives you instruments to answer it yourself, and shows the real evidence: actual telescope data, actual detector signals, actual papers. Take them in order, or jump to whichever stop grabs you.</p>
+    <ol class="stations">
+      <li><a href="#m1"><span class="sn">01</span><b>What is a black hole?</b><span class="sq">Escape speed, the event horizon, and why tides can kill.</span><span class="tags"><i>compressor</i><i>tide meter</i></span></a></li>
+      <li><a href="#m2"><span class="sn">02</span><b>How they are born</b><span class="sq">Stars, collapse, and the mass limits that decide a star’s fate.</span><span class="tags"><i>fate simulator</i><i>Crab Nebula</i></span></a></li>
+      <li><a href="#m3"><span class="sn">03</span><b>How we see them</b><span class="sq">Star orbits, gravitational waves, and the first images.</span><span class="tags"><i class="real">REAL EHT IMAGE</i><i class="real">REAL LIGO SIGNAL</i></span></a></li>
+      <li><a href="#m4"><span class="sn">04</span><b>Spinning black holes</b><span class="sq">Dragged space, the ergosphere, and cosmic engines.</span><span class="tags"><i>spin console</i><i>M87 in polarised light</i></span></a></li>
+      <li><a href="#m5"><span class="sn">05</span><b>Black holes glow, and die</b><span class="sq">Hawking radiation and the information paradox.</span><span class="tags"><i>thermometer</i><i>Page curve</i></span></a></li>
+      <li><a href="#m6"><span class="sn">06</span><b>The edge of physics</b><span class="sq">Holography, wormholes, and what nobody knows yet.</span><span class="tags"><i>holographic drive</i><i>open questions</i></span></a></li>
+    </ol>
+    <div class="outgrid">
+      <div class="outcomes">
+        <h3>When you finish, you will be able to</h3>
+        <ol>
+          <li>Explain what an event horizon is, and work out how small anything would have to be squeezed to become a black hole.</li>
+          <li>Explain why falling into a giant black hole is gentler than falling into a small one.</li>
+          <li>Describe how a dying star ends up as a white dwarf, a neutron star or a black hole, and why its mass decides.</li>
+          <li>Weigh the black hole at the centre of our galaxy from a star’s orbit, as the 2020 Nobel laureates did.</li>
+          <li>Recognise a gravitational-wave chirp in real LIGO data, and say what produced it.</li>
+          <li>Explain what the famous black-hole image really shows, and how an Earth-sized telescope made it.</li>
+          <li>Explain how spinning black holes power quasars and jets.</li>
+          <li>Explain why black holes have a temperature and slowly evaporate, and state the information paradox in your own words.</li>
+          <li>Say what the holographic principle claims, and where today’s research is heading.</li>
+        </ol>
+      </div>
+      <div class="needs">
+        <h3>What you need</h3>
+        <dl>
+          <dt>TIME</dt><dd>About 2 hours in total, 15–25 minutes per module. Your progress is saved in this browser, so you can stop anywhere.</dd>
+          <dt>MATHS</dt><dd>None required. Equations sit in fold-out “go deeper” panels for those who want them.</dd>
+          <dt>SOUND</dt><dd>Headphones help in Module 03, where you can hear real and simulated black-hole collisions.</dd>
+          <dt>FINISH LINE</dt><dd>Pass the three-question check in each module to earn all six badges.</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <div class="howto" aria-label="How this manual works">
+    <div><p class="t">MISSION BRIEF</p><h3>One big question</h3><p>Each module opens with the question it answers.</p></div>
+    <div><p class="t">INSTRUMENTS</p><h3>Play with real physics</h3><p>Every console runs the actual equations. Nothing is a canned animation.</p></div>
+    <div><p class="t">CALIBRATION</p><h3>Earn six badges</h3><p>Pass the 3-question check at the end of a module to sync it.</p></div>
+    <div><p class="t">GO DEEPER</p><h3>Equations on request</h3><p>Fold-out panels show the maths for students who want it.</p></div>
+  </div>
+
+  <!-- ================= MODULE 1 ================= -->
+  <section class="module" id="m1">
+    <div class="mhead"><span class="mnum">01</span><p class="mlabel">MODULE 01 · DEFINITION</p><h2>What is a black hole?</h2></div>
+    <div class="col">
+      <p class="brief"><small>MISSION BRIEF</small>How hard would you have to squeeze the Sun before its own light could no longer get out?</p>
+      <p>Throw a ball upward and it falls back. Throw it faster than <span class="big">11.2 km/s</span> and it escapes Earth for good. That speed, the escape velocity, depends on how much mass there is and how close you stand to it. Squeeze the same mass into a smaller ball and the escape velocity at its surface goes up.</p>
+      <p>Keep squeezing and eventually escape velocity reaches the speed of light, about 300,000 km/s. Then nothing, not even light, can leave. The surface where that happens is the <b>event horizon</b>, and its radius is the <b>Schwarzschild radius</b>:</p>
+      <p style="text-align:center;font-size:22px">$r_s=\dfrac{2GM}{c^2}$</p>
+      <p>For the Sun that is about <span class="big">3 km</span>. For Earth, <span class="big">9 mm</span>, the size of a marble.</p>
+    </div>
+
+    <div class="inst" id="instSqueeze">
+      <div class="ihead"><span class="led"></span><b>INSTRUMENT 01-A</b> · COMPRESSOR</div>
+      <div class="ibody">
+        <div class="screen"><canvas id="cvSqueeze" width="640" height="460" aria-label="A sphere shrinking as you compress it; light rays escape until it becomes a black hole"></canvas></div>
+        <div class="ctl">
+          <div class="chips" id="sqObj" role="group" aria-label="Object"><button class="chip" data-o="you">You</button><button class="chip" data-o="moon">Moon</button><button class="chip" data-o="earth" aria-pressed="true">Earth</button><button class="chip" data-o="sun">Sun</button></div>
+          <label for="sqR">Squeeze <output id="sqRo"></output></label>
+          <input type="range" id="sqR" min="0" max="1000" step="1" value="0">
+          <div class="read">
+            <div><div class="l">radius</div><div class="v" id="sqRad"></div></div>
+            <div><div class="l">event horizon r<sub>s</sub></div><div class="v" id="sqRs"></div></div>
+            <div><div class="l">escape speed</div><div class="v hot" id="sqV"></div></div>
+            <div><div class="l">1 hour on surface =</div><div class="v" id="sqT"></div></div>
+          </div>
+          <div class="status" id="sqStat"></div>
+        </div>
+      </div>
+      <div class="ifoot">Drag the slider to compress. The orange rays are light leaving the surface. Watch them struggle, bend back, and finally stop escaping.</div>
+    </div>
+
+    <div class="col">
+      <h3>A horizon is not a surface</h3>
+      <p>There is nothing solid at the event horizon. It is a boundary in spacetime: cross it and every possible future path leads inward. Someone falling in feels nothing special at that moment. A distant observer sees something very different. The infalling clock appears to tick slower and slower, and the light from it is stretched redder and redder, until it fades from view just outside the horizon.</p>
+      <p>What does hurt is the <b>tide</b>. Gravity pulls harder on your feet than on your head, and near a small black hole that difference is lethal long before the horizon. Astronomers really do call it <i>spaghettification</i>.</p>
+    </div>
+
+    <div class="inst" id="instTide">
+      <div class="ihead"><span class="led"></span><b>INSTRUMENT 01-B</b> · SPAGHETTIFICATION METER</div>
+      <div class="ibody">
+        <div class="screen"><canvas id="cvTide" width="640" height="300" aria-label="An astronaut stretched by tidal forces at the horizon"></canvas></div>
+        <div class="ctl">
+          <label for="tdM">Black hole mass <output id="tdMo"></output></label>
+          <input type="range" id="tdM" min="0" max="10" step="0.01" value="1">
+          <div class="chips" id="tdPre"><button class="chip" data-v="1">10 Suns</button><button class="chip" data-v="6.633">Sgr A*</button><button class="chip" data-v="9.81">M87*</button></div>
+          <div class="read">
+            <div><div class="l">horizon radius</div><div class="v" id="tdR"></div></div>
+            <div><div class="l">head-to-toe pull at horizon</div><div class="v hot" id="tdA"></div></div>
+          </div>
+          <div class="status" id="tdStat"></div>
+        </div>
+      </div>
+      <div class="ifoot">For a 2 m astronaut falling feet-first. Counter-intuitively, the <b>bigger</b> the black hole, the gentler the tide at its horizon.</div>
+    </div>
+
+    <div class="col">
+      <h3>Mission log: how we figured this out</h3>
+      <ol class="log">
+        <li><time>1783</time>John Michell imagines “dark stars” so massive their light falls back. Laplace has the same idea in 1796.</li>
+        <li><time>1915</time>Einstein’s general relativity: gravity is the curvature of spacetime.</li>
+        <li><time>1916</time>Karl Schwarzschild finds the exact solution for a single mass, while serving at the front in World War I. It contains $r_s$.</li>
+        <li><time>1939</time>Oppenheimer and Snyder show a heavy enough dying star collapses past its horizon.</li>
+        <li><time>1958</time>David Finkelstein shows the horizon is a one-way membrane, not a wall.</li>
+        <li><time>1963</time>Roy Kerr finds the solution for a <i>spinning</i> black hole (Module 04).</li>
+        <li><time>1967</time>John Wheeler popularizes the name “black hole”.</li>
+        <li><time>1971</time>Cygnus X-1, an X-ray source orbiting a blue giant, becomes the first strong black-hole candidate.</li>
+        <li><time>1974</time>Stephen Hawking shows black holes glow and slowly evaporate (Module 05).</li>
+        <li><time>2015</time>LIGO hears two black holes merge (Module 03).</li>
+        <li><time>2019</time>The Event Horizon Telescope photographs the shadow of M87*.</li>
+        <li><time>2020</time>Nobel Prize: Penrose for the theory, Genzel and Ghez for the black hole at our galaxy’s centre.</li>
+        <li><time>2022</time>First image of Sagittarius A*, our own galaxy’s black hole.</li>
+      </ol>
+<div class="archive"><p class="t">ARCHIVE · REAL DATA, IMAGES AND VIDEO</p><div class="agrid"><figure class="media"><img src="assets/m87_2017_11apr.jpg" alt="The glowing ring around the black hole M87*, reconstructed from Event Horizon Telescope data" loading="lazy"><figcaption><span class="realtag">REAL DATA</span><b>This is what one actually looks like.</b> The ring of light around M87*, 55 million light-years away, rebuilt for this manual from the telescope’s raw public data. Module 03 shows how.<span class="cr">Data: EHT Collaboration 2019, public release 2019-D01-01. Imaged for this manual with the collaboration’s eht-imaging pipeline (2019-D01-02), 20 μas blur.</span></figcaption></figure><a class="mlink" href="https://svs.gsfc.nasa.gov/14576" target="_blank" rel="noopener"><span class="k">VIDEO · NASA GODDARD</span><b>Falling into a black hole</b><span class="d">A 2024 supercomputer simulation that takes you past the event horizon of a supermassive black hole.</span><span class="s">NASA Scientific Visualization Studio · 2024</span></a><a class="mlink" href="https://www.eso.org/public/images/eso1907a/" target="_blank" rel="noopener"><span class="k">IMAGE · ESO / EHT</span><b>The first image of a black hole (2019)</b><span class="d">The official Event Horizon Telescope image of M87*, released 10 April 2019.</span><span class="s">ESO · eso1907a · CC BY 4.0</span></a></div></div>
+      <details class="deep"><summary>GO DEEPER · THE EQUATIONS</summary><div>
+        <p><b>Escape velocity.</b> Setting kinetic energy equal to the gravitational binding, $\tfrac12mv^2=GMm/r$, gives $v=\sqrt{2GM/r}$. Setting $v=c$ gives $r_s=2GM/c^2$. This Newtonian argument is not really valid at light speed, but by a happy coincidence general relativity gives exactly the same radius.</p>
+        <p><b>The Schwarzschild metric</b> describes spacetime outside any spherical mass:
+        $$ds^2=-\Big(1-\frac{r_s}{r}\Big)c^2dt^2+\frac{dr^2}{1-r_s/r}+r^2d\Omega^2 .$$</p>
+        <p><b>Time dilation.</b> A clock held at radius $r$ ticks slower than a distant one by $\sqrt{1-r_s/r}$, which goes to zero at the horizon. The “1 hour on surface” readout uses this.</p>
+        <p><b>Tidal stretching.</b> The difference in pull across a length $L$ at radius $r$ is $\Delta a\approx 2GML/r^3$. At the horizon this is $\Delta a=Lc^6/(4G^2M^2)$, which falls as $1/M^2$.</p>
+      </div></details>
+    </div>
+
+    <div class="calib" data-quiz="1"></div>
+  </section>
+
+  <!-- ================= MODULE 2 ================= -->
+  <section class="module" id="m2">
+    <div class="mhead"><span class="mnum">02</span><p class="mlabel">MODULE 02 · ORIGIN</p><h2>How black holes are born</h2></div>
+    <div class="col">
+      <p class="brief"><small>MISSION BRIEF</small>Every star is a tug of war between gravity crushing inward and pressure pushing out. What happens when the pressure loses?</p>
+      <p>A star like the Sun burns hydrogen into helium in its core, and the heat of that fusion holds it up. When the fuel runs out, gravity wins and the core shrinks. What it shrinks <i>into</i> depends on its mass:</p>
+      <ul>
+        <li><b>White dwarf.</b> Electrons packed so tightly that quantum mechanics forbids them from squeezing closer. This only holds up to about <span class="big">1.4 Suns</span>, the Chandrasekhar limit (1930).</li>
+        <li><b>Neutron star.</b> Above that, electrons are crushed into protons, making neutrons, and the core becomes a city-sized atomic nucleus. That holds up to roughly <span class="big">2–2.3 Suns</span>.</li>
+        <li><b>Black hole.</b> Above that, no known force can stop the collapse.</li>
+      </ul>
+    </div>
+
+    <div class="inst" id="instStar">
+      <div class="ihead"><span class="led"></span><b>INSTRUMENT 02-A</b> · STELLAR FATE SIMULATOR</div>
+      <div class="ibody">
+        <div class="screen"><canvas id="cvStar" width="640" height="420" aria-label="A star of chosen mass and the remnant it leaves"></canvas></div>
+        <div class="ctl">
+          <label for="stM">Star’s birth mass <output id="stMo"></output></label>
+          <input type="range" id="stM" min="-0.3" max="1.78" step="0.005" value="0">
+          <div class="read">
+            <div><div class="l">lifetime</div><div class="v" id="stLife"></div></div>
+            <div><div class="l">how it dies</div><div class="v" id="stDeath"></div></div>
+            <div><div class="l">remnant</div><div class="v hot" id="stRem"></div></div>
+            <div><div class="l">remnant size</div><div class="v" id="stSize"></div></div>
+          </div>
+          <div class="status" id="stStat"></div>
+        </div>
+      </div>
+      <div class="ifoot">The dividing lines are approximate. Real outcomes also depend on the star’s spin, its chemical make-up, and whether it has a companion.</div>
+    </div>
+
+    <div class="col">
+      <h3>The collapse itself</h3>
+      <p>For a massive star the end comes in under a second. The iron core, about the size of Earth, collapses at up to a quarter of the speed of light. Often it rebounds as a <b>supernova</b> that outshines its whole galaxy for weeks. If too much matter falls back, or the explosion fails entirely, the core keeps going and a horizon forms. In 1965 Roger Penrose proved that once a horizon-like “trapped surface” forms, a singularity inside is unavoidable. That proof was part of his 2020 Nobel Prize.</p>
+      <div class="signal"><b class="t">SIGNAL INTERCEPTED · DENSITY PARADOX</b>A black hole’s “average density” (mass divided by the volume inside its horizon) goes <i>down</i> as it gets heavier. For a 10-Sun black hole it is far denser than an atomic nucleus. For M87*, at 6.5 billion Suns, it is about <span class="big">0.4 kg/m³</span>, thinner than the air you are breathing.</div>
+      <h3>And the giants?</h3>
+      <p>Almost every large galaxy has a <b>supermassive</b> black hole at its centre, with millions to billions of times the Sun’s mass. How they grew so big so fast is still an open question. The James Webb Space Telescope keeps finding heavy ones less than a billion years after the Big Bang, earlier than simple growth models predict.</p>
+<div class="archive"><p class="t">ARCHIVE · REAL DATA, IMAGES AND VIDEO</p><div class="agrid"><a class="mlink" href="https://esahubble.org/images/heic0515a/" target="_blank" rel="noopener"><span class="k">IMAGE · ESA / HUBBLE</span><b>The Crab Nebula</b><span class="d">Debris of a star that exploded in the year 1054, recorded by astronomers in China. A spinning neutron star sits at its heart: what the middle-weight stars in the simulator leave behind.</span><span class="s">ESA/Hubble · heic0515a</span></a><a class="mlink" href="https://chandra.si.edu/photo/2011/cygx1/" target="_blank" rel="noopener"><span class="k">IMAGE · NASA CHANDRA</span><b>Cygnus X-1 in X-rays</b><span class="d">The first object widely accepted as a black hole. It pulls gas off a blue supergiant companion, and the gas glows in X-rays as it falls in. Later measurements put its mass at about 21 Suns.</span><span class="s">NASA Chandra X-ray Observatory · 2011</span></a><a class="mlink" href="https://www.esa.int/Science_Exploration/Space_Science/Gaia/Sleeping_giant_surprises_Gaia_scientists" target="_blank" rel="noopener"><span class="k">NEWS · ESA</span><b>Gaia BH3: a sleeping giant</b><span class="d">The most massive stellar black hole known in our galaxy, 33 Suns, found in 2024 from the wobble of an old companion star.</span><span class="s">European Space Agency · 2024</span></a></div></div>
+      <details class="deep"><summary>GO DEEPER · WHY THERE IS A MAXIMUM MASS</summary><div>
+        <p>A star supported by degenerate electrons has pressure $P\propto\rho^{4/3}$ once the electrons become relativistic. Gravity’s demand on pressure scales the same way with density, so increasing the density no longer helps. Equilibrium only exists below a critical mass, $M_{\rm Ch}\approx1.4\,M_\odot$ (Chandrasekhar). The same logic, with the much stiffer and less certain nuclear equation of state, gives the neutron-star maximum (Tolman–Oppenheimer–Volkoff limit), measured to be at least about $2\,M_\odot$ from heavy pulsars.</p>
+        <p>Stellar lifetimes scale roughly as $t\approx10^{10}\,{\rm yr}\,(M/M_\odot)^{-2.5}$. Heavy stars burn far faster, which is why black-hole progenitors live only a few million years.</p>
+      </div></details>
+    </div>
+    <div class="calib" data-quiz="2"></div>
+  </section>
+
+  <!-- ================= MODULE 3 ================= -->
+  <section class="module" id="m3">
+    <div class="mhead"><span class="mnum">03</span><p class="mlabel">MODULE 03 · DETECTION</p><h2>How we see the invisible</h2></div>
+    <div class="col">
+      <p class="brief"><small>MISSION BRIEF</small>If no light escapes, how do we know black holes are real? We watch what they do to everything around them.</p>
+      <p>There are four main ways. Stars orbiting nothing visible. Gas heated to millions of degrees as it spirals in, glowing in X-rays. Ripples in spacetime itself from colliding black holes. And, since 2019, direct pictures of the shadow a black hole casts on its glowing surroundings.</p>
+      <h3>1 · Weigh the monster at the centre of the Milky Way</h3>
+      <p>Since the 1990s, two teams led by Reinhard Genzel and Andrea Ghez have tracked stars whipping around an invisible point called <b>Sagittarius A*</b>. The star S2 completes an orbit every <span class="big">16 years</span> and passes within about 120 times the Earth–Sun distance of it, at nearly 3% of light speed. Only a black hole fits that much mass into that small a space. Find the mass yourself:</p>
+    </div>
+
+    <div class="inst" id="instS2">
+      <div class="ihead"><span class="led"></span><b>INSTRUMENT 03-A</b> · ORBIT FITTER · TARGET SGR A*</div>
+      <div class="ibody">
+        <div class="screen"><canvas id="cvS2" width="640" height="460" aria-label="The orbit of star S2 around Sagittarius A star, with observed positions and your model"></canvas></div>
+        <div class="ctl">
+          <label for="s2M">Your guess for the mass <output id="s2Mo"></output></label>
+          <input type="range" id="s2M" min="5.7" max="7.2" step="0.005" value="6.15">
+          <label for="s2T">Year <output id="s2To"></output></label>
+          <input type="range" id="s2T" min="2002" max="2018.5" step="0.05" value="2002">
+          <div class="chips"><button class="chip" id="s2Play">▶ Play the years</button></div>
+          <div class="read">
+            <div><div class="l">your model’s period</div><div class="v" id="s2P"></div></div>
+            <div><div class="l">observed period</div><div class="v">16.0 yr</div></div>
+          </div>
+          <div class="status" id="s2Stat"></div>
+        </div>
+      </div>
+      <div class="ifoot">Orange diamonds are the star’s observed positions, one per year (simplified from the published orbit). The red dot is your model star. Adjust the mass until it stays on the data.</div>
+    </div>
+
+    <div class="col">
+      <h3>2 · Hear two black holes collide</h3>
+      <p>On <b>14 September 2015</b>, the two LIGO detectors in the USA registered a tiny shiver: a stretch and squeeze of their 4 km arms by a few thousandths of a proton’s width. It came from two black holes, of about <span class="big">36</span> and <span class="big">29</span> Suns, merging 1.3 billion years ago. In the last fraction of a second they converted <span class="big">3 Suns</span> of mass into gravitational waves, briefly outshining all the stars in the observable universe combined, in gravitational rather than visible power. As they spiral together the waves rise in pitch: a <b>chirp</b>.</p>
+    </div>
+
+    <div class="inst" id="instGW">
+      <div class="ihead"><span class="led"></span><b>INSTRUMENT 03-B</b> · GRAVITATIONAL-WAVE RECEIVER</div>
+      <div class="ibody">
+        <div class="screen"><canvas id="cvGW" width="640" height="320" aria-label="Gravitational wave chirp waveform"></canvas></div>
+        <div class="ctl">
+          <label for="gwM">Chirp mass <output id="gwMo"></output></label>
+          <input type="range" id="gwM" min="1" max="80" step="0.5" value="28">
+          <div class="chips"><button class="chip" data-v="1.2">Neutron stars</button><button class="chip" data-v="28" aria-pressed="true">GW150914</button><button class="chip" data-v="70">Heavy pair</button></div>
+          <label for="gwP">Pitch shift for small speakers <output id="gwPo"></output></label>
+          <input type="range" id="gwP" min="1" max="8" step="1" value="4">
+          <button class="btn" id="gwPlay" type="button">▶ Play the chirp</button>
+          <div class="read">
+            <div><div class="l">time in band (from 30 Hz)</div><div class="v hot" id="gwDur"></div></div>
+            <div><div class="l">final frequency</div><div class="v" id="gwF"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="ifoot">The waveform is computed from the leading-order inspiral formula, then cut off near merger. Heavier pairs chirp lower and faster. Light neutron stars sweep through the detector’s band for nearly a minute.</div>
+    </div>
+
+    <div class="col">
+      </div><div class="archive"><p class="t">REAL DATA · THE ACTUAL SIGNAL FROM 14 SEPTEMBER 2015</p><div class="agrid"><figure class="media wide"><img src="assets/gw150914_strain.jpg" alt="Real LIGO strain data from both detectors showing the GW150914 chirp" loading="lazy"><figcaption><span class="realtag">REAL DATA</span><b>Both LIGO detectors, 3,000 km apart, recorded the same wiggle 7 milliseconds apart.</b> Noise is filtered out (whitened and band-passed to 35–350 Hz), exactly as in the discovery paper. The Livingston trace is shifted by 7 ms and flipped, because the two detectors are rotated relative to each other.<span class="cr">Data: LIGO Scientific Collaboration via the Gravitational Wave Open Science Center (GWOSC), 4 kHz release. Processed for this manual.</span></figcaption><div class="audiorow"><button class="btn" id="gwReal" type="button">▶ Play the real signal</button><button class="chip" id="gwReal2" type="button">Play it two octaves higher</button><span class="hint">2 seconds of Hanford data. The “thump” at the end is the merger.</span></div></figure><figure class="media wide"><img src="assets/gw150914_spec.jpg" alt="Spectrogram of real LIGO Hanford data showing the chirp sweeping from about 35 Hz to 250 Hz" loading="lazy"><figcaption><span class="realtag">REAL DATA</span><b>The chirp, seen as frequency against time.</b> The bright streak sweeps from about 35 Hz to 250 Hz in a fifth of a second. Compare it with the simulated chirp above.<span class="cr">Data: LIGO Hanford via GWOSC. Spectrogram computed for this manual.</span></figcaption></figure></div></div><div class="col">
+      <div class="signal"><b class="t">SIGNAL INTERCEPTED · THE QUIET ONES</b>Most black holes eat nothing and give off nothing. In 2024 the Gaia spacecraft found <b>Gaia BH3</b>, a dormant black hole of about 33 Suns, simply by noticing an old star wobbling around an unseen partner about 1,900 light-years away.</div>
+      <h3>3 · Photograph the shadow</h3>
+      <p>Gas swirling around a black hole glows, and gravity bends that light around the hole. The result is a bright ring around a dark centre: the <b>shadow</b>. General relativity predicts its size exactly: about $2\sqrt{27}\,GM/c^2$, a little over five times the horizon radius. The Event Horizon Telescope linked radio dishes across the planet into one Earth-sized telescope to resolve it. Check the prediction:</p>
+    </div>
+
+    <div class="inst" id="instEHT">
+      <div class="ihead"><span class="led"></span><b>INSTRUMENT 03-C</b> · SHADOW CALIPER</div>
+      <div class="ibody">
+        <div class="screen"><canvas id="cvEHT" width="640" height="380" aria-label="Predicted shadow ring compared with the measured ring size"></canvas></div>
+        <div class="ctl">
+          <div class="chips" id="ehtT"><button class="chip" data-t="m87" aria-pressed="true">M87* (2019)</button><button class="chip" data-t="sgra">Sgr A* (2022)</button></div>
+          <label for="ehtM">Mass you assume <output id="ehtMo"></output></label>
+          <input type="range" id="ehtM" min="-0.6" max="0.6" step="0.005" value="0">
+          <div class="read">
+            <div><div class="l">predicted ring</div><div class="v hot" id="ehtP"></div></div>
+            <div><div class="l">measured ring</div><div class="v" id="ehtO"></div></div>
+          </div>
+          <div class="status" id="ehtStat"></div>
+        </div>
+      </div>
+      <div class="ifoot">Sizes are in micro-arcseconds (μas). The M87* ring is about as big on the sky as a doughnut on the Moon would look from Earth.</div>
+    </div>
+
+<div class="archive"><p class="t">REAL DATA · THE M87* IMAGE, REBUILT FROM THE RAW OBSERVATIONS</p><div class="agrid"><figure class="media wide"><img src="assets/m87_2017_4days.jpg" alt="Four reconstructed images of M87* from 5, 6, 10 and 11 April 2017, each a bright ring" loading="lazy"><figcaption><span class="realtag">REAL DATA</span><b>Four nights in April 2017, four independent images, the same ring.</b> We ran the Event Horizon Telescope’s own published imaging pipeline on its public data for each night. The ring is about 40 μas across and brighter at the bottom, where gas orbiting toward us is beamed. That a black hole looks the same night after night is itself evidence it is not a passing blob of gas.<span class="cr">Data: EHT Collaboration 2019, public release 2019-D01-01. Imaged for this manual with the collaboration’s eht-imaging pipeline (2019-D01-02), 20 μas blur.</span></figcaption></figure><figure class="media"><img src="assets/eht_uv_11apr.jpg" alt="Plot of the points in Fourier space sampled by the EHT on 11 April 2017, spread across a disk the size of Earth" loading="lazy"><figcaption><span class="realtag">REAL DATA</span><b>What the “Earth-sized telescope” actually measured.</b> Each dot is one pair of radio dishes on 11 April 2017, as Earth’s rotation swept their separation. The image is reconstructed from these sparse samples, which is why it is blurry and why several independent teams cross-checked it.<span class="cr">Data: EHT 2019-D01-01, 11 April high band.</span></figcaption></figure><a class="mlink" href="https://www.eso.org/public/news/eso2208-eht-mw/" target="_blank" rel="noopener"><span class="k">IMAGE · ESO / EHT</span><b>Sagittarius A*, our own black hole (2022)</b><span class="d">The first image of the black hole at the centre of the Milky Way, released 12 May 2022. It is 1,500 times lighter than M87* but also 2,000 times closer, so it looks about the same size.</span><span class="s">ESO · eso2208-eht-mw</span></a><a class="mlink" href="https://eventhorizontelescope.org/M87-one-year-later-proof-of-a-persistent-black-hole-shadow" target="_blank" rel="noopener"><span class="k">NEWS · EHT</span><b>M87* one year later</b><span class="d">2018 observations showed the same-sized ring with its bright spot moved, as predicted for a real shadow with turbulent gas around it.</span><span class="s">Event Horizon Telescope · January 2024</span></a><a class="mlink" href="https://www.eso.org/public/videos/eso2006b/" target="_blank" rel="noopener"><span class="k">VIDEO · ESO</span><b>S2’s orbit precesses</b><span class="d">An animation of how star S2’s orbit around Sgr A* rotates, exactly as general relativity predicts. Measured by the GRAVITY instrument in 2020.</span><span class="s">ESO · eso2006b</span></a></div></div>
+    <div class="col">
+      <details class="deep"><summary>GO DEEPER · THE THREE FORMULAS BEHIND THE INSTRUMENTS</summary><div>
+        <p><b>Kepler’s third law</b> in convenient units: $M/M_\odot=(a/{\rm AU})^3/(P/{\rm yr})^2$. For S2, $a\approx1030$ AU and $P\approx16.0$ yr give $M\approx4.3\times10^6M_\odot$.</p>
+        <p><b>The chirp.</b> At leading order the gravitational-wave frequency a time $\tau$ before merger is
+        $$f(\tau)=\frac1\pi\Big(\frac{5}{256\,\tau}\Big)^{3/8}\Big(\frac{G\mathcal M}{c^3}\Big)^{-5/8},$$
+        where $\mathcal M=(m_1m_2)^{3/5}/(m_1+m_2)^{1/5}$ is the chirp mass. LIGO reads $\mathcal M$ directly off how fast the pitch rises.</p>
+        <p><b>The shadow.</b> Light rays passing closer than impact parameter $b_c=3\sqrt3\,GM/c^2$ are captured. So the shadow’s angular diameter at distance $D$ is $\theta=2b_c/D$. For spinning holes it changes by only a few percent.</p>
+      </div></details>
+    </div>
+    <div class="calib" data-quiz="3"></div>
+  </section>
+
+  <!-- ================= MODULE 4 ================= -->
+  <section class="module" id="m4">
+    <div class="mhead"><span class="mnum">04</span><p class="mlabel">MODULE 04 · ROTATION</p><h2>Spinning black holes</h2></div>
+    <div class="col">
+      <p class="brief"><small>MISSION BRIEF</small>Real black holes spin, some at nearly the speed of light. What does a spinning hole do to the space around it?</p>
+      <p>Stars rotate, and when they collapse they spin up like a figure skater pulling in their arms. In 1963 Roy Kerr found the exact spacetime of a spinning black hole. Remarkably, it is described by just two numbers: its <b>mass</b> and its <b>spin</b>. (A third, electric charge, is negligible in nature.)</p>
+      <p>A spinning black hole drags space around with it, an effect called <b>frame dragging</b>. Close enough, in a region called the <b>ergosphere</b>, nothing can stand still: even a rocket firing at full power is swept around. Material in the ergosphere can still escape, and a clever enough process can even extract the hole’s rotational energy. Many astronomers think magnetic fields threading spinning holes do exactly this to launch the jets seen shooting from galaxies like M87.</p>
+    </div>
+
+    <div class="inst" id="instKerr">
+      <div class="ihead"><span class="led"></span><b>INSTRUMENT 04-A</b> · SPIN CONSOLE · TOP-DOWN VIEW OF THE EQUATOR</div>
+      <div class="ibody">
+        <div class="screen"><canvas id="cvKerr" width="640" height="520" aria-label="Top-down view of a spinning black hole: horizon, ergosphere, photon orbits and innermost stable orbits"></canvas></div>
+        <div class="ctl">
+          <label for="krA">Spin a (0 = still, 1 = maximum) <output id="krAo"></output></label>
+          <input type="range" id="krA" min="0" max="0.998" step="0.001" value="0.6">
+          <div class="chips" id="krPre"><button class="chip" data-v="0">Schwarzschild</button><button class="chip" data-v="0.9">Fast</button><button class="chip" data-v="0.998">Near max</button></div>
+          <div class="read">
+            <div><div class="l">horizon</div><div class="v" id="krH"></div></div>
+            <div><div class="l">innermost stable orbit</div><div class="v" id="krI"></div></div>
+            <div><div class="l">energy released by infall</div><div class="v hot" id="krE"></div></div>
+            <div><div class="l">vs. nuclear fusion</div><div class="v" id="krX"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="ifoot">Radii in units of $GM/c^2$. The drifting dots are dragged by the spin, faster closer in. Inside the orange ergosphere they can never hold still.</div>
+    </div>
+
+    <div class="col">
+      <h3>The most efficient engine in the universe</h3>
+      <p>Matter spiralling into a black hole heats up and radiates before it crosses the <b>innermost stable orbit</b>. For a non-spinning hole that releases about <span class="big">6%</span> of the matter’s rest-mass energy, $E=mc^2$. For a hole spinning near its limit, up to <span class="big">42%</span>. Hydrogen fusion in stars manages 0.7%. That is why quasars, black holes swallowing gas at the centres of young galaxies, can outshine a trillion stars.</p>
+      <h3>Reading the image at the top</h3>
+      <p>The live render at the top of this page traces light rays backwards from your screen through curved spacetime. Several things in it are real predictions:</p>
+      <ul>
+        <li>The disk appears to <b>wrap over and under</b> the black hole. You are seeing the far side of the disk, its light bent up and over the top and down under the bottom.</li>
+        <li>One side is <b>much brighter</b>. That gas is moving toward you at a sizeable fraction of light speed, and relativistic beaming concentrates its light forward.</li>
+        <li>The dark centre is <b>bigger than the horizon</b>. That is the shadow from Module 03.</li>
+      </ul>
+<div class="archive"><p class="t">ARCHIVE · REAL DATA, IMAGES AND VIDEO</p><div class="agrid"><a class="mlink" href="https://www.eso.org/public/images/eso2105a/" target="_blank" rel="noopener"><span class="k">IMAGE · ESO / EHT</span><b>M87* in polarised light (2021)</b><span class="d">The swirling pattern traces magnetic fields at the black hole’s edge, the fields thought to launch its 5,000-light-year jet.</span><span class="s">ESO · eso2105a · CC BY 4.0</span></a><a class="mlink" href="https://www.eso.org/public/videos/eso2105b/" target="_blank" rel="noopener"><span class="k">VIDEO · ESO</span><b>Zooming in to the heart of M87</b><span class="d">From the whole galaxy and its jet down to the polarised ring around the black hole.</span><span class="s">ESO · eso2105b</span></a><a class="mlink" href="https://svs.gsfc.nasa.gov/13326/" target="_blank" rel="noopener"><span class="k">VIDEO · NASA GODDARD</span><b>How a black hole warps its own disk</b><span class="d">The visualization behind this page’s hero image: why the far side of the disk appears above and below the hole, and why one side is brighter.</span><span class="s">NASA Scientific Visualization Studio · 2019</span></a></div></div>
+      <details class="deep"><summary>GO DEEPER · KERR IN FORMULAS</summary><div>
+        <p>With $M=G=c=1$ and spin $a=J/M\in[0,1]$, the horizon sits at $r_+=1+\sqrt{1-a^2}$ and the ergosphere’s outer edge on the equator at $r=2$.</p>
+        <p>The innermost stable circular orbit is $r_{\rm isco}=3+Z_2\mp\sqrt{(3-Z_1)(3+Z_1+2Z_2)}$ (upper sign for orbits with the spin), with $Z_1=1+(1-a^2)^{1/3}\big[(1+a)^{1/3}+(1-a)^{1/3}\big]$ and $Z_2=\sqrt{3a^2+Z_1^2}$.</p>
+        <p>The fraction of rest mass radiated by the time gas reaches it is $\eta=1-\sqrt{1-\tfrac{2}{3r_{\rm isco}}}$: 5.7% at $a=0$, 42% at $a=1$.</p>
+      </div></details>
+    </div>
+    <div class="calib" data-quiz="4"></div>
+  </section>
+
+  <!-- ================= MODULE 5 ================= -->
+  <section class="module" id="m5">
+    <div class="mhead"><span class="mnum">05</span><p class="mlabel">MODULE 05 · QUANTUM</p><h2>Black holes glow, and die</h2></div>
+    <div class="col">
+      <p class="brief"><small>MISSION BRIEF</small>In 1974 Stephen Hawking combined quantum physics with gravity and found that black holes are not completely black. They glow, and given long enough they evaporate.</p>
+      <p>Quantum theory says empty space is never truly empty. Near a horizon, the vacuum gets torn apart: quantum fields are in an entangled state across the horizon. One partner of each pair escapes as radiation and the other falls in. The result is a faint thermal glow, <b>Hawking radiation</b>, at a temperature</p>
+      <p style="text-align:center;font-size:22px">$T_H=\dfrac{\hbar c^3}{8\pi GMk_B}$</p>
+      <p>Heavier means colder. A black hole with the Sun’s mass glows at about <span class="big">60 billionths of a degree</span> above absolute zero, far colder than the 2.7 K afterglow of the Big Bang. So today it absorbs more than it emits. But a small black hole would be ferociously hot, and as it loses mass it gets hotter still, until it ends in a burst.</p>
+    </div>
+
+    <div class="inst" id="instHawk">
+      <div class="ihead"><span class="led"></span><b>INSTRUMENT 05-A</b> · HAWKING THERMOMETER</div>
+      <div class="ibody">
+        <div class="screen"><canvas id="cvHawk" width="640" height="360" aria-label="Temperature scale with the black hole's Hawking temperature marked"></canvas></div>
+        <div class="ctl">
+          <label for="hkM">Black hole mass <output id="hkMo"></output></label>
+          <input type="range" id="hkM" min="5" max="38" step="0.01" value="30.3">
+          <div class="chips" id="hkPre"><button class="chip" data-v="11.24">Evaporating today</button><button class="chip" data-v="22.87">Moon</button><button class="chip" data-v="30.3">Sun</button><button class="chip" data-v="36.94">Sgr A*</button></div>
+          <div class="read">
+            <div><div class="l">temperature</div><div class="v hot" id="hkT"></div></div>
+            <div><div class="l">size (horizon radius)</div><div class="v" id="hkR"></div></div>
+            <div><div class="l">glows mostly as</div><div class="v" id="hkL"></div></div>
+            <div><div class="l">time to evaporate</div><div class="v" id="hkLife"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="ifoot">Lifetime from the photon-only estimate $t\approx5120\pi G^2M^3/\hbar c^4$. Real black holes emit other particles too, so very small ones evaporate somewhat faster.</div>
+    </div>
+
+    <div class="col">
+      <div class="signal"><b class="t">SIGNAL INTERCEPTED · MOUNTAIN-MASS FIREWORKS</b>Any black hole lighter than about <span class="big">10¹¹ kg</span>, roughly a mountain squeezed smaller than a proton, would have evaporated in the 13.8 billion years since the Big Bang. If “primordial” black holes formed in the early universe, the ones that started near that mass would be exploding right now. Gamma-ray telescopes are watching. None has been seen yet.</div>
+      <h3>The information paradox</h3>
+      <p>Here is the problem that has kept physicists arguing for fifty years. Quantum mechanics insists that information is never destroyed. In principle, you could run the universe backwards and reconstruct a burnt book from its smoke and ash. Hawking’s calculation says the radiation is purely thermal: it depends only on the hole’s mass, spin and charge, not on what fell in. Throw in a book or a piano, and the same featureless glow comes out. When the black hole has evaporated completely, where did the information go?</p>
+      <p>In 1993 Don Page sharpened the question. Track the <b>entanglement</b> between the radiation and the black hole. If information is preserved, that entanglement must rise and then fall back to zero by the end. If Hawking is right, it only rises.</p>
+    </div>
+
+    <div class="inst" id="instPage">
+      <div class="ihead"><span class="led"></span><b>INSTRUMENT 05-B</b> · ENTANGLEMENT TRACKER</div>
+      <div class="ibody">
+        <div class="screen"><canvas id="cvPage" width="640" height="340" aria-label="Page curve versus Hawking's curve over the black hole's lifetime"></canvas></div>
+        <div class="ctl">
+          <label for="pgT">Fraction of lifetime elapsed <output id="pgTo"></output></label>
+          <input type="range" id="pgT" min="0" max="1" step="0.002" value="0.3">
+          <div class="read">
+            <div><div class="l">black hole mass left</div><div class="v" id="pgM"></div></div>
+            <div><div class="l">Hawking’s answer</div><div class="v" id="pgH"></div></div>
+            <div><div class="l">if information survives</div><div class="v hot" id="pgP"></div></div>
+          </div>
+          <div class="status" id="pgStat"></div>
+        </div>
+      </div>
+      <div class="ifoot">Entanglement entropy of the radiation, in units of the starting black hole’s entropy. Simplified model: Hawking radiation carries 4/3 of the entropy the hole loses.</div>
+    </div>
+
+    <div class="col">
+      <p>The curves split at the <b>Page time</b>, a bit more than halfway through the evaporation. At that moment the black hole is still enormous and spacetime near its horizon is gentle, so the disagreement cannot be blamed on unknown physics at tiny scales. In 2019, several groups showed how the rising-then-falling <b>Page curve</b> emerges from gravity itself, through regions inside the black hole called <b>islands</b> that turn out to belong to the radiation. How the information actually gets out is still being worked out.</p>
+<div class="archive"><p class="t">ARCHIVE · REAL DATA, IMAGES AND VIDEO</p><div class="agrid"><a class="mlink" href="https://doi.org/10.1038/248030a0" target="_blank" rel="noopener"><span class="k">PAPER · NATURE 1974</span><b>“Black hole explosions?”</b><span class="d">Stephen Hawking’s two-page paper announcing that black holes radiate. One of the most cited papers in physics.</span><span class="s">S. W. Hawking, Nature 248, 30</span></a><a class="mlink" href="https://doi.org/10.1038/s41586-019-1241-0" target="_blank" rel="noopener"><span class="k">PAPER · NATURE 2019</span><b>Hawking radiation in the lab</b><span class="d">Jeff Steinhauer’s team made a “black hole” for sound in an ultracold atom cloud and measured its thermal Hawking glow and temperature.</span><span class="s">J. R. Muñoz de Nova et al., Nature 569, 688</span></a><a class="mlink" href="https://arxiv.org/abs/2006.06872" target="_blank" rel="noopener"><span class="k">REVIEW · ARXIV 2020</span><b>The entropy of Hawking radiation</b><span class="d">The review of how the Page curve was finally computed from gravity in 2019. Advanced, but its introduction is readable.</span><span class="s">Almheiri, Hartman, Maldacena, Shaghoulian, Tajdini</span></a></div></div>
+      <details class="deep"><summary>GO DEEPER · WHERE THE TEMPERATURE COMES FROM</summary><div>
+        <p>Waves leaving the horizon region are stretched exponentially: a signal that reaches a distant observer at time $t$ left from a distance $\propto e^{-t/4GM}$ outside the horizon. That exponential stretching turns the quantum vacuum into a thermal spectrum at $T=1/8\pi GM$ (in units $\hbar=c=k_B=1$).</p>
+        <p>Combined with the first law of thermodynamics $dM=T\,dS$, this gives the black hole an entropy $S=A/4\ell_P^2$: one quarter of the horizon area in Planck units, where $\ell_P=\sqrt{\hbar G/c^3}\approx1.6\times10^{-35}$ m. For a solar-mass hole that is about $10^{77}$ in units of Boltzmann’s constant, vastly more than the star that formed it.</p>
+        <p>The advanced course linked in Module 06 derives all of this step by step from Witten’s notes.</p>
+      </div></details>
+    </div>
+    <div class="calib" data-quiz="5"></div>
+  </section>
+
+  <!-- ================= MODULE 6 ================= -->
+  <section class="module" id="m6">
+    <div class="mhead"><span class="mnum">06</span><p class="mlabel">MODULE 06 · FRONTIER</p><h2>The edge of physics</h2></div>
+    <div class="col">
+      <p class="brief"><small>MISSION BRIEF</small>A black hole’s entropy depends on its surface area, not its volume. That one fact may be telling us what space is made of.</p>
+      <p>For everything else we know, the amount of information you can store grows with volume: twice as big a box holds eight times as many marbles. Black holes break that rule. The maximum information in a region is set by the <b>area</b> of its boundary, roughly one bit for every three Planck-sized patches of area. Since nothing can hold more information than a black hole of the same size, this is a universal limit.</p>
+      <p>This suggests something radical, the <b>holographic principle</b>: a region of space might be fully described by information living on its boundary, the way a flat hologram encodes a 3D image.</p>
+    </div>
+
+    <div class="inst" id="instHolo">
+      <div class="ihead"><span class="led"></span><b>INSTRUMENT 06-A</b> · HOLOGRAPHIC HARD DRIVE</div>
+      <div class="ibody">
+        <div class="screen"><canvas id="cvHolo" width="640" height="340" aria-label="Maximum bits storable in a sphere of chosen radius compared with familiar data sizes"></canvas></div>
+        <div class="ctl">
+          <label for="hoR">Radius of the region <output id="hoRo"></output></label>
+          <input type="range" id="hoR" min="-15" max="7" step="0.01" value="-2">
+          <div class="chips" id="hoPre"><button class="chip" data-v="-15.08">Proton</button><button class="chip" data-v="-2">1 cm</button><button class="chip" data-v="0">1 m</button><button class="chip" data-v="6.8">Earth</button></div>
+          <div class="read">
+            <div><div class="l">maximum storage</div><div class="v hot" id="hoB"></div></div>
+            <div><div class="l">in 1 TB drives</div><div class="v" id="hoT"></div></div>
+          </div>
+          <div class="status" id="hoStat"></div>
+        </div>
+      </div>
+      <div class="ifoot">Bound: bits $=A/(4\ell_P^2\ln2)$ for a sphere of area $A$. Reaching it would require turning the whole region into a black hole.</div>
+    </div>
+
+    <div class="col">
+      <h3>Six frontiers, still open</h3>
+    </div>
+    <div class="cards">
+      <div class="card"><span class="t">HOLOGRAPHY</span><h4>Universes in a box</h4><p>In 1997 Juan Maldacena found an exact example: a gravitational universe shaped like a saddle (anti-de Sitter space) is equivalent to an ordinary quantum theory on its boundary. Black holes inside are hot, chaotic soups outside.</p></div>
+      <div class="card"><span class="t">ENTANGLEMENT</span><h4>Space from quantum links</h4><p>The Ryu–Takayanagi formula ties entanglement in the boundary theory to the area of surfaces inside. Cut the entanglement and the space between regions pulls apart.</p></div>
+      <div class="card"><span class="t">WORMHOLES</span><h4>ER = EPR</h4><p>Two entangled black holes may be connected by a wormhole. The conjecture links Einstein–Rosen bridges to Einstein–Podolsky–Rosen entanglement. You can’t travel through, but you can’t tell them apart from outside either.</p></div>
+      <div class="card"><span class="t">CHAOS</span><h4>The fastest scramblers</h4><p>Black holes mix information faster than anything else allowed by physics, saturating a universal speed limit on chaos. A message thrown in is spread across the whole horizon almost instantly.</p></div>
+      <div class="card"><span class="t">LABORATORY</span><h4>Black holes in a tank</h4><p>Flowing water or ultracold atoms can trap sound the way a horizon traps light. Experiments in Bose–Einstein condensates have seen a sound version of Hawking radiation.</p></div>
+      <div class="card"><span class="t">THE INSIDE</span><h4>What is at the centre?</h4><p>General relativity predicts a singularity where it breaks down. What replaces it needs a full theory of quantum gravity, which nobody has yet.</p></div>
+    </div>
+
+<div class="wrap" style="padding:0"><div class="archive"><p class="t">ARCHIVE · REAL DATA, IMAGES AND VIDEO</p><div class="agrid"><a class="mlink" href="https://arxiv.org/abs/hep-th/9711200" target="_blank" rel="noopener"><span class="k">PAPER · 1997</span><b>The holographic universe in a box</b><span class="d">Juan Maldacena’s paper proposing that gravity in anti-de Sitter space is equivalent to a quantum theory on its boundary. The most cited paper in high-energy physics.</span><span class="s">J. Maldacena, arXiv:hep-th/9711200</span></a><a class="mlink" href="https://arxiv.org/abs/hep-th/0603001" target="_blank" rel="noopener"><span class="k">PAPER · 2006</span><b>Entanglement makes geometry</b><span class="d">The Ryu–Takayanagi formula: the entanglement of a region equals the area of a surface in the hidden dimension.</span><span class="s">S. Ryu & T. Takayanagi, arXiv:hep-th/0603001</span></a><a class="mlink" href="https://arxiv.org/abs/1306.0533" target="_blank" rel="noopener"><span class="k">PAPER · 2013</span><b>Cool horizons for entangled black holes</b><span class="d">The ER = EPR proposal linking wormholes to entanglement.</span><span class="s">J. Maldacena & L. Susskind, arXiv:1306.0533</span></a></div></div></div>
+    <div class="col">
+      <div class="signal"><b class="t">SIGNAL INTERCEPTED · HAWKING’S AREA THEOREM, TESTED</b>Classically, the total horizon area can never shrink, even when black holes merge. In 2025 the LIGO–Virgo–KAGRA collaboration reported GW250114, a merger signal clear enough to check this directly. The final black hole’s horizon area was larger than the two original ones combined, just as Hawking predicted in 1971.</div>
+      <h3>Want the full derivations?</h3>
+      <p>The companion course works through Edward Witten’s <i>Introduction to Black Hole Thermodynamics</i> lecture by lecture, with Penrose diagrams you learn to draw, computed gray-body factors, the Unruh effect, and a running thread on the information paradox. It is aimed at physics graduate students.</p>
+      <p><a class="btn ghost" href="https://claude.ai/artifact/5QcVLWWcUnmiNBvea9buSm" target="_blank" rel="noopener">Open the advanced course</a></p>
+    </div>
+    <div class="calib" data-quiz="6"></div>
+
+    <h3 class="col" style="margin-top:46px">Mission status</h3>
+    <div class="badges" id="badges"></div>
+    <p class="col badge-msg" id="finalMsg"></p>
+  </section>
+
+  <section class="col" style="padding-block:40px 0" id="sources">
+    <h3 style="font-family:var(--f-disp);font-size:22px">Sources and credits</h3>
+    <ul class="src">
+      <li>Introductory text and numbers checked against <a href="https://openstax.org/details/books/astronomy-2e" target="_blank" rel="noopener">OpenStax <i>Astronomy 2e</i></a> (CC BY 4.0) and <a href="https://science.nasa.gov/universe/black-holes/" target="_blank" rel="noopener">NASA Science: black holes</a>.</li>
+      <li>GW150914: <a href="https://arxiv.org/abs/1602.03837" target="_blank" rel="noopener">LIGO/Virgo, PRL 116, 061102 (2016)</a>. Open data at <a href="https://gwosc.org" target="_blank" rel="noopener">GWOSC</a>.</li>
+      <li>Shadows: <a href="https://arxiv.org/abs/1906.11238" target="_blank" rel="noopener">EHT Collaboration, M87* (2019)</a> and <a href="https://eventhorizontelescope.org" target="_blank" rel="noopener">Event Horizon Telescope</a> (Sgr A*, 2022).</li>
+      <li>S2 orbit: GRAVITY Collaboration, A&amp;A 615, L15 (2018); Ghez group, UCLA Galactic Center Group.</li>
+      <li>Gaia BH3: <a href="https://arxiv.org/abs/2404.10486" target="_blank" rel="noopener">Gaia Collaboration (2024)</a>.</li>
+      <li>Hawking radiation and the information paradox: Hawking (1974–75); Page (1993); <a href="https://arxiv.org/abs/2006.06872" target="_blank" rel="noopener">Almheiri et al., review (2020)</a>.</li>
+      <li>The M87* images and Fourier-coverage plot were reconstructed for this manual from the <a href="https://github.com/eventhorizontelescope/2019-D01-01" target="_blank" rel="noopener">EHT public data release 2019-D01-01</a> using the collaboration’s <a href="https://github.com/eventhorizontelescope/2019-D01-02" target="_blank" rel="noopener">eht-imaging pipeline 2019-D01-02</a>. They are not the official EHT image.</li>
+      <li>The GW150914 plots and audio use LIGO strain data from the <a href="https://github.com/losc-tutorial/LOSC_Event_tutorial" target="_blank" rel="noopener">GWOSC event tutorial</a>, processed for this manual.</li>
+      <li>All other graphics are computed live in your browser from the equations shown. Linked images and videos belong to their credited owners.</li>
+    </ul>
+  </section>
+</main>
+<footer><div class="wrap">EVENT HORIZON FIELD MANUAL · BUILT FOR CURIOUS HUMANS · PROGRESS IS SAVED IN THIS BROWSER ONLY</div></footer>
+
+<script>
+// ===================== shared helpers =====================
+const CSSV=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const COL={void:CSSV('--void'),ink:CSSV('--ink'),ink2:CSSV('--ink-2'),ink3:CSSV('--ink-3'),ember:CSSV('--ember'),flare:CSSV('--flare'),blood:CSSV('--blood'),crimson:CSSV('--crimson'),line:CSSV('--line'),line2:CSSV('--line-2'),ok:CSSV('--ok')};
+const MONO='500 13px "Fredoka", "Nunito", system-ui, sans-serif';
+const REDUCED=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const G=6.674e-11,c=2.998e8,hbar=1.0546e-34,kB=1.380649e-23,Msun=1.989e30,lP2=hbar*G/c**3,AU=1.496e11,YR=3.156e7;
+const $=id=>document.getElementById(id);
+function prep(cv){const W=+cv.getAttribute('width'),H=+cv.getAttribute('height');const S=Math.min(2,window.devicePixelRatio||1);
+  cv.width=W*S;cv.height=H*S;const x=cv.getContext('2d');x.setTransform(S,0,0,S,0,0);return {x,W,H};}
+const SUP='⁰¹²³⁴⁵⁶⁷⁸⁹';
+function sup(n){return String(n).split('').map(ch=>ch==='-'?'⁻':SUP[+ch]).join('')}
+function sci(v,d=2){if(!isFinite(v))return '∞';if(v===0)return '0';const e=Math.floor(Math.log10(Math.abs(v)));if(e>=-2&&e<5)return String(+v.toPrecision(d+1));return (v/10**e).toFixed(d)+'×10'+sup(e)}
+function len(m){const a=Math.abs(m);if(a>=9.461e15)return sci(m/9.461e15)+' ly';if(a>=1.496e11)return sci(m/1.496e11)+' AU';if(a>=1e3)return sci(m/1e3)+' km';if(a>=1)return sci(m)+' m';if(a>=1e-3)return sci(m*1e3)+' mm';if(a>=1e-6)return sci(m*1e6)+' μm';return sci(m)+' m'}
+function dur(s){if(!isFinite(s))return '∞';if(s<1e-3)return sci(s)+' s';if(s<120)return sci(s)+' s';if(s<7200)return sci(s/60)+' min';if(s<2*86400)return sci(s/3600)+' h';if(s<2*YR)return sci(s/86400)+' days';return sci(s/YR)+' yr'}
+function mass(kg){const r=kg/Msun;if(r>=0.01)return sci(r)+' Suns';return sci(kg)+' kg'}
+function glowDot(x,X,Y,r,col,a=1){const g=x.createRadialGradient(X,Y,0,X,Y,r);g.addColorStop(0,col);g.addColorStop(1,'rgba(0,0,0,0)');x.globalAlpha=a;x.fillStyle=g;x.beginPath();x.arc(X,Y,r,0,7);x.fill();x.globalAlpha=1}
+function stars(x,W,H,n,seed){let s=seed||7;const r=()=>{s=(s*16807)%2147483647;return s/2147483647};for(let i=0;i<n;i++){const X=r()*W,Y=r()*H,b=r();x.fillStyle=`rgba(255,${180+b*60|0},${150+b*80|0},${0.25+0.6*b*b})`;x.fillRect(X,Y,b>0.92?2:1,b>0.92?2:1)}}
+function label(x,t,X,Y,col,al='left',f=MONO){x.font=f;x.fillStyle=col||COL.ink2;x.textAlign=al;x.fillText(t,X,Y)}
+// visibility-aware animation registry
+const ANIM=new Map(); const VIS=new Set();
+const io=('IntersectionObserver' in window)?new IntersectionObserver(es=>es.forEach(e=>{e.isIntersecting?VIS.add(e.target):VIS.delete(e.target)}),{rootMargin:'100px'}):null;
+function animate(el,fn){ANIM.set(el,fn);if(io)io.observe(el);else VIS.add(el)}
+let lastT=performance.now();
+function loop(now){const dt=Math.min(0.05,(now-lastT)/1000);lastT=now;if(!document.hidden)ANIM.forEach((fn,el)=>{if(VIS.has(el))fn(now/1000,dt)});requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+function chipGroup(id,cb){const box=$(id);if(!box)return;box.addEventListener('click',e=>{const b=e.target.closest('button.chip');if(!b)return;box.querySelectorAll('.chip').forEach(z=>z.setAttribute('aria-pressed',z===b?'true':'false'));cb(b)})}
+
+// ===================== HERO: WebGL ray tracer =====================
+(function(){
+  const cv=$('bh'); const gl=cv.getContext('webgl',{antialias:false,preserveDrawingBuffer:false});
+  if(!gl){$('heroFallback').hidden=false;cv.style.visibility='hidden';$('fps').textContent='WEBGL UNAVAILABLE · STATIC VIEW';return}
+  const vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+  const fs=`precision highp float;
+uniform vec2 R,O;uniform float T;uniform vec3 C,F,Ux,Uy;
+float h31(vec3 p){p=fract(p*vec3(.1031,.1030,.0973));p+=dot(p,p.yxz+33.33);return fract((p.x+p.y)*p.z);}
+float h21(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
+float n2(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h21(i),h21(i+vec2(1.,0.)),f.x),mix(h21(i+vec2(0.,1.)),h21(i+vec2(1.,1.)),f.x),f.y);}
+vec3 sky(vec3 d){vec3 c=vec3(0.);
+  vec3 q=d*80.;vec3 i=floor(q);float h=h31(i);if(h>.986){vec3 f=fract(q)-.5;float sp=exp(-dot(f,f)*14.)+.7*exp(-abs(f.x)*26.-f.y*f.y*300.)+.7*exp(-abs(f.y)*26.-f.x*f.x*300.);c+=mix(vec3(1.,.7,.25),vec3(1.,.95,.85),h31(i+3.))*sp*2.4;}
+  q=d*260.;i=floor(q);h=h31(i);if(h>.985){vec3 f=fract(q)-.5;c+=vec3(1.,.8,.7)*exp(-dot(f,f)*30.)*.9;}
+  float a=atan(d.z,d.x);float nb=n2(vec2(cos(a)*3.+4.,d.y*5.+sin(a)*3.));c+=vec3(.20,.025,.02)*pow(nb,3.)*(1.-abs(d.y))*1.4;
+  float st=n2(vec2(cos(a)*60.+sin(a)*7.,d.y*3.5));c+=vec3(1.,.85,.6)*pow(st,14.)*.9;
+  return c;}
+vec3 disk(vec3 c,float rc,float g){
+  float x=max(1.-sqrt(3./rc),0.);float te=pow(3./rc,.75)*pow(x,.25)/.488*g;
+  float ang=-T*.9*pow(rc,-1.5)*3.;mat2 m=mat2(cos(ang),-sin(ang),sin(ang),cos(ang));vec2 q=m*c.xz;
+  float w=n2(q*1.15)*.6+n2(q*3.3)*.3+n2(vec2(rc*5.,0.)+q*.2)*.4;
+  float I=pow(te,4.)*(.35+1.1*w);I=floor(I*4.+.5)/4.+.12*I;
+  vec3 col=mix(vec3(.55,.03,.03),vec3(1.,.42,.05),smoothstep(.25,.85,te));col=mix(col,vec3(1.,.84,.3),smoothstep(.95,1.5,te));
+  vec2 gq=floor(q*26.);float gl=h21(gq);col+=vec3(1.,.9,.5)*step(.975,gl)*2.5*smoothstep(.2,.7,te);
+  return col*I*2.6;}
+void main(){
+  vec2 uv=(gl_FragCoord.xy-O*R)/R.y;
+  vec3 v=normalize(F+uv.x*Ux*.78+uv.y*Uy*.78);vec3 p=C;
+  vec3 hv=cross(p,v);float h2=dot(hv,hv);
+  vec3 col=vec3(0.);float a=0.;bool hor=false;
+  for(int i=0;i<300;i++){
+    float r=length(p);float dt=clamp(.04*r,.01,1.2);
+    vec3 acc=-1.5*h2*p/pow(r,5.);
+    vec3 v2=v+acc*dt;vec3 p2=p+v2*dt;
+    if(p.y*p2.y<0.){float t=p.y/(p.y-p2.y);vec3 cc=mix(p,p2,t);float rc=length(cc.xz);
+      if(rc>3.&&rc<14.){vec3 vd=normalize(vec3(-cc.z,0.,cc.x));float b=min(sqrt(.5/(rc-1.)),.9);float gam=1./sqrt(1.-b*b);
+        float cs=dot(vd,-normalize(v2));float g=sqrt(1.-1./rc)/(gam*(1.-b*cs));
+        float al=smoothstep(14.,9.,rc)*smoothstep(3.,3.3,rc)*.92;
+        col+=(1.-a)*disk(cc,rc,g)*al;a+=(1.-a)*al;}}
+    p=p2;v=v2;
+    if(r<1.){hor=true;break;}
+    if(r>45.)break;
+  }
+  if(!hor)col+=(1.-a)*sky(normalize(v));
+  col=1.-exp(-col*1.25);col=mix(col,floor(col*7.+.5)/7.,.35);
+  gl_FragColor=vec4(col,1.);
+}`;
+  function sh(t,src){const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){console.warn(gl.getShaderInfoLog(s));return null}return s}
+  const pr=gl.createProgram();const a1=sh(gl.VERTEX_SHADER,vs),a2=sh(gl.FRAGMENT_SHADER,fs);
+  if(!a1||!a2){$('heroFallback').hidden=false;cv.style.visibility='hidden';return}
+  gl.attachShader(pr,a1);gl.attachShader(pr,a2);gl.linkProgram(pr);gl.useProgram(pr);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  const U={};['R','O','T','C','F','Ux','Uy'].forEach(k=>U[k]=gl.getUniformLocation(pr,k));
+  let az=0.6,el=0.12,dist=24,scale=window.innerWidth<700?0.42:0.6,frames=0,acc=0,dragging=false,px=0,py=0,lastInput=0;
+  function resize(){const w=cv.clientWidth,h=cv.clientHeight;cv.width=Math.max(2,w*scale|0);cv.height=Math.max(2,h*scale|0);gl.viewport(0,0,cv.width,cv.height)}
+  resize();addEventListener('resize',resize);
+  function render(t){
+    const C=[dist*Math.cos(el)*Math.sin(az),dist*Math.sin(el),dist*Math.cos(el)*Math.cos(az)];
+    const Fv=C.map(v=>-v/dist);let Ux=[Fv[1]*0-Fv[2]*1,Fv[2]*0-Fv[0]*0,Fv[0]*1-Fv[1]*0];const n=Math.hypot(...Ux);Ux=Ux.map(v=>v/n);
+    const Uy=[Ux[1]*Fv[2]-Ux[2]*Fv[1],Ux[2]*Fv[0]-Ux[0]*Fv[2],Ux[0]*Fv[1]-Ux[1]*Fv[0]];
+    gl.uniform2f(U.R,cv.width,cv.height);const wide=cv.clientWidth>=900;gl.uniform2f(U.O,wide?0.7:0.5,wide?0.52:0.66);gl.uniform1f(U.T,t);gl.uniform3fv(U.C,C);gl.uniform3fv(U.F,Fv);gl.uniform3fv(U.Ux,Ux);gl.uniform3fv(U.Uy,Uy);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+  }
+  let tAcc=0;
+  animate(cv,(t,dt)=>{
+    const t0=performance.now();
+    if(!REDUCED){tAcc+=dt;if(!dragging&&t-lastInput>3)az+=dt*0.05;}
+    render(tAcc);
+    frames++;acc+=performance.now()-t0;
+    if(frames%40===0){const ms=acc/40;acc=0;if(ms>45&&scale>0.3){scale*=0.8;resize()}$('fps').textContent=`${cv.width}×${cv.height} PX · ${Math.min(60,Math.round(1000/Math.max(ms,16.7)))} FPS`}
+  });
+  cv.addEventListener('pointerdown',e=>{dragging=true;px=e.clientX;py=e.clientY;cv.setPointerCapture(e.pointerId)});
+  cv.addEventListener('pointermove',e=>{if(!dragging)return;az-=(e.clientX-px)*0.006;el=Math.max(-0.7,Math.min(0.7,el+(e.clientY-py)*0.004));px=e.clientX;py=e.clientY;lastInput=performance.now()/1000;if(REDUCED)render(tAcc)});
+  cv.addEventListener('pointerup',()=>{dragging=false});cv.addEventListener('pointercancel',()=>{dragging=false});
+  render(0);
+})();
+
+// ===================== 01-A Compressor =====================
+(function(){
+  const cv=$('cvSqueeze');const {x,W,H}=prep(cv);
+  const OBJ={you:{m:70,R:0.3,n:'you'},moon:{m:7.342e22,R:1.7374e6,n:'the Moon'},earth:{m:5.972e24,R:6.371e6,n:'Earth'},sun:{m:1.989e30,R:6.957e8,n:'the Sun'}};
+  let o=OBJ.earth;const sl=$('sqR');
+  const bg=document.createElement('canvas');bg.width=W;bg.height=H;stars(bg.getContext('2d'),W,H,160,11);
+  let r=o.R,rs=0;
+  function state(){rs=2*G*o.m/c**2;const f=+sl.value/1000;r=Math.exp(Math.log(o.R)+(Math.log(0.5*rs)-Math.log(o.R))*Math.pow(f,0.85));
+    $('sqRo').textContent=(r>=o.R*0.999?'none':'×'+sci(o.R/r,1));
+    $('sqRad').textContent=len(r);$('sqRs').textContent=len(rs);
+    const st=$('sqStat');
+    if(r>rs){const v=c*Math.sqrt(rs/r);$('sqV').textContent=v<1e3?sci(v)+' m/s':v<1e7?sci(v/1e3)+' km/s':(100*v/c).toFixed(1)+'% of c';
+      const d=1/Math.sqrt(1-rs/r);$('sqT').textContent=d<1.000001?'1 hour far away':(d<1.001?'1 h + '+sci((d-1)*3600,1)+' s':sci(d,2)+' h') +' far away';
+      const q=r/rs;
+      if(q>1e4){st.className='status';st.textContent=`Ordinary ${o.n}. Light escapes easily.`}
+      else if(q>3){st.className='status';st.textContent=`Ultra-compact: denser than a neutron star. Light still escapes, but is badly redshifted.`}
+      else if(q>1.5){st.className='status';st.textContent=`Near the photon sphere (1.5 r_s): light can orbit in a circle here.`}
+      else {st.className='status';st.textContent=`Almost there. Only light aimed straight out still escapes.`}
+    } else {$('sqV').textContent='> c';$('sqT').textContent='frozen, forever';st.className='status alert';st.textContent=`EVENT HORIZON FORMED. You have made a black hole out of ${o.n}.`}
+  }
+  const rays=[];for(let i=0;i<36;i++)rays.push({a:i/36*Math.PI*2+0.05*Math.sin(i*7),s:Math.random()});
+  function rpx(){const R0=150,H0=42;const q=r/rs,qmax=o.R/rs;return q>=1?H0+(R0-H0)*Math.log(q)/Math.log(qmax):H0*q}
+  function draw(t,dt){
+    x.clearRect(0,0,W,H);x.drawImage(bg,0,0,W,H);const X=W/2,Y=H/2;const R=rpx(),q=r/rs;
+    // horizon marker
+    x.setLineDash([4,5]);x.strokeStyle=COL.ink3;x.lineWidth=1;x.beginPath();x.arc(X,Y,42,0,7);x.stroke();x.setLineDash([]);
+    label(x,'r_s',X+44,Y-44,COL.ink3);
+    if(q>1){
+      // body
+      const g=x.createRadialGradient(X-R*0.3,Y-R*0.3,R*0.1,X,Y,R);const hot=Math.min(1,1/Math.log10(q+1.2));
+      g.addColorStop(0,o===OBJ.sun?'#FFE2B0':'#6A4A40');g.addColorStop(1,o===OBJ.sun?COL.ember:'#2A1714');x.fillStyle=g;x.beginPath();x.arc(X,Y,R,0,7);x.fill();
+      // rays
+      const slow=1-1/q;
+      rays.forEach(p=>{if(!REDUCED)p.s=(p.s+dt*0.35*Math.max(slow,0.04))%1;const d=R+p.s*(Math.min(W,H)/2-R+30);
+        const red=Math.min(1,1-slow);x.strokeStyle=`rgba(255,${(150*(1-red))|0},${(60*(1-red))|0},${0.85*(1-p.s)})`;x.lineWidth=2;
+        x.beginPath();x.moveTo(X+Math.cos(p.a)*d,Y+Math.sin(p.a)*d);x.lineTo(X+Math.cos(p.a)*(d+14*Math.max(slow,.15)),Y+Math.sin(p.a)*(d+14*Math.max(slow,.15)));x.stroke()});
+    } else {
+      glowDot(x,X,Y,95,'rgba(255,106,26,0.55)');glowDot(x,X,Y,60,'rgba(224,48,42,0.6)');
+      x.fillStyle='#000';x.beginPath();x.arc(X,Y,42,0,7);x.fill();
+      x.strokeStyle=COL.flare;x.lineWidth=2;x.beginPath();x.arc(X,Y,43,0,7);x.stroke();
+      rays.forEach(p=>{if(!REDUCED)p.s=(p.s+dt*0.25)%1;const d=42+(1-p.s)*120;x.strokeStyle=`rgba(255,120,40,${0.6*p.s})`;x.lineWidth=1.5;x.beginPath();x.moveTo(X+Math.cos(p.a)*d,Y+Math.sin(p.a)*d);x.lineTo(X+Math.cos(p.a)*(d-10),Y+Math.sin(p.a)*(d-10));x.stroke()});
+      label(x,'NO LIGHT ESCAPES',X,Y+130,COL.crimson,'center');
+    }
+    label(x,`${o.n.toUpperCase()} · ${len(r)}`,14,22,COL.ink2);
+  }
+  sl.addEventListener('input',()=>{state();draw(0,0)});
+  chipGroup('sqObj',b=>{o=OBJ[b.dataset.o];state();draw(0,0)});
+  state();draw(0,0);animate(cv,draw);
+})();
+
+// ===================== 01-B Spaghettification =====================
+(function(){
+  const cv=$('cvTide');const {x,W,H}=prep(cv);const sl=$('tdM');let acc=0;
+  function upd(){const M=Msun*10**(+sl.value);const rs=2*G*M/c**2;acc=2*c**6/(4*G*G*M*M);const gs=acc/9.81;
+    $('tdMo').textContent=mass(M);$('tdR').textContent=len(rs);$('tdA').textContent=sci(gs)+' g';
+    const st=$('tdStat');const r100=Math.cbrt(2*G*M*2/(100*9.81));
+    if(gs>100){st.className='status alert';st.textContent=`Lethal. The tide passes 100 g at ${len(r100)} from the centre, ${sci(r100/rs,1)}× the horizon radius. You are spaghetti long before you reach it.`}
+    else if(gs>3){st.className='status';st.textContent='Painful but you might survive the crossing. A fighter pilot blacks out around 9 g.'}
+    else{st.className='status good';st.textContent='You float through the horizon without feeling a thing. The danger is invisible.'}
+    draw()}
+  function draw(){x.clearRect(0,0,W,H);const gs=acc/9.81;const X=W/2;
+    // horizon line
+    const g=x.createLinearGradient(0,H-70,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(142,16,24,0.6)');x.fillStyle=g;x.fillRect(0,H-70,W,70);
+    x.strokeStyle=COL.ember;x.setLineDash([6,5]);x.beginPath();x.moveTo(0,H-40);x.lineTo(W,H-40);x.stroke();x.setLineDash([]);
+    label(x,'EVENT HORIZON',14,H-48,COL.ember);label(x,'↓ toward the black hole',W-14,H-14,COL.ink2,'right');
+    const s=Math.min(5.5,1+Math.max(0,Math.log10(gs+1))*0.55);const w=Math.max(4,22/Math.sqrt(s));const base=H-48,top=Math.max(44,base-60*s-40);
+    // figure: feet at base, stretched upward
+    const L=(base-top);
+    x.strokeStyle=COL.ink;x.lineWidth=w;x.lineCap='round';
+    x.beginPath();x.moveTo(X,top+20);x.lineTo(X,base-L*0.35);x.stroke();
+    x.lineWidth=w*0.6;x.beginPath();x.moveTo(X,base-L*0.35);x.lineTo(X-10/s,base);x.moveTo(X,base-L*0.35);x.lineTo(X+10/s,base);x.stroke();
+    x.beginPath();x.moveTo(X,top+20+L*0.15);x.lineTo(X-24/Math.sqrt(s),top+20+L*0.4);x.moveTo(X,top+20+L*0.15);x.lineTo(X+24/Math.sqrt(s),top+20+L*0.4);x.stroke();
+    x.fillStyle=COL.ink;x.beginPath();x.ellipse(X,top+8,13/Math.sqrt(s),13*Math.min(s,2.2)/1.2,0,0,7);x.fill();
+    // arrows
+    const arrow=(y,l,up)=>{x.strokeStyle=up?COL.flare:COL.crimson;x.lineWidth=2;x.beginPath();x.moveTo(X+70,y);x.lineTo(X+70,y+(up?-l:l));x.stroke();x.beginPath();x.moveTo(X+64,y+(up?-l+8:l-8));x.lineTo(X+70,y+(up?-l:l));x.lineTo(X+76,y+(up?-l+8:l-8));x.stroke()};
+    const al=Math.min(70,10+Math.log10(gs+1)*9);arrow(top+30,al,true);arrow(base-20,al,false);
+    label(x,`stretch ${sci(gs)} g`,X+90,(top+base)/2,COL.flare);
+  }
+  sl.addEventListener('input',upd);chipGroup('tdPre',b=>{sl.value=b.dataset.v;upd()});upd();
+})();
+
+// ===================== 02-A Stellar fate =====================
+(function(){
+  const cv=$('cvStar');const {x,W,H}=prep(cv);const sl=$('stM');
+  const bg=document.createElement('canvas');bg.width=W;bg.height=H;stars(bg.getContext('2d'),W,H,120,5);
+  function fate(M){
+    let life=Math.max(3e6,1e10*Math.pow(M,-2.5));
+    if(M<8){const wd=Math.min(1.35,0.08*M+0.48);return{life,death:'Red giant, then sheds its outer layers',rem:'White dwarf, '+wd.toFixed(2)+' Suns',kind:'wd',mr:wd,size:'≈ '+Math.round(6400*Math.pow(wd/0.6,-1/3))+' km radius (Earth-sized)'}}
+    if(M<20)return{life,death:'Core collapse → supernova',rem:'Neutron star, ≈ 1.4 Suns',kind:'ns',mr:1.4,size:'≈ 12 km radius (city-sized)'};
+    if(M<25)return{life,death:'Supernova, possibly with fallback',rem:'Neutron star or black hole',kind:'edge',mr:2.5,size:'≈ 12 km, or a horizon ≈ 7 km'};
+    const bh=0.3*M;return{life,death:'Collapse, weak or failed supernova',rem:'Black hole, ≈ '+bh.toFixed(0)+' Suns',kind:'bh',mr:bh,size:'horizon ≈ '+(2.95*bh).toFixed(0)+' km radius'};
+  }
+  function starColor(M){if(M<0.8)return['#FFB27A','#C2410C'];if(M<1.6)return['#FFF1C9','#FFB347'];if(M<5)return['#FFFFFF','#FFE3B0'];return['#E8F0FF','#9FB8FF']}
+  function upd(){const M=10**(+sl.value);const f=fate(M);$('stMo').textContent=M.toFixed(M<10?2:0)+' Suns';
+    $('stLife').textContent=dur(f.life*YR);$('stDeath').textContent=f.death;$('stRem').textContent=f.rem;$('stSize').textContent=f.size;
+    const st=$('stStat');if(f.kind==='bh'){st.className='status alert';st.textContent='Nothing can hold this core up. A black hole forms.'}else if(f.kind==='edge'){st.className='status';st.textContent='Borderline. The outcome depends on details of the explosion.'}else{st.className='status';st.textContent=f.kind==='wd'?'Pressure from packed electrons wins. No black hole.':'Neutron pressure wins, just. No black hole.'}
+    draw(M,f)}
+  function draw(M,f){x.clearRect(0,0,W,H);x.drawImage(bg,0,0,W,H);
+    const sy=170;const sr=Math.min(110,18*Math.pow(M,0.55));const [c1,c2]=starColor(M);
+    glowDot(x,170,sy,sr*1.8,c2+'88');const g=x.createRadialGradient(165,sy-5,sr*0.1,170,sy,sr);g.addColorStop(0,c1);g.addColorStop(1,c2);x.fillStyle=g;x.beginPath();x.arc(170,sy,sr,0,7);x.fill();
+    label(x,'BIRTH · '+M.toFixed(M<10?2:0)+' M☉',170,sy+130,COL.ink2,'center');
+    // arrow
+    x.strokeStyle=COL.line2;x.lineWidth=2;x.setLineDash([6,6]);x.beginPath();x.moveTo(300,sy);x.lineTo(410,sy);x.stroke();x.setLineDash([]);
+    x.beginPath();x.moveTo(400,sy-7);x.lineTo(412,sy);x.lineTo(400,sy+7);x.stroke();label(x,dur(f.life*YR).toUpperCase(),355,sy-14,COL.ink3,'center');
+    const rx=505;
+    if(f.kind==='wd'){glowDot(x,rx,sy,40,'rgba(220,235,255,0.5)');x.fillStyle='#EEF4FF';x.beginPath();x.arc(rx,sy,9,0,7);x.fill();label(x,'WHITE DWARF',rx,sy+130,COL.ink2,'center')}
+    else if(f.kind==='ns'||f.kind==='edge'){x.strokeStyle='rgba(160,190,255,0.55)';x.lineWidth=3;x.beginPath();x.moveTo(rx-30,sy-90);x.lineTo(rx+30,sy+90);x.stroke();glowDot(x,rx,sy,30,'rgba(180,200,255,0.6)');x.fillStyle='#DCE6FF';x.beginPath();x.arc(rx,sy,5,0,7);x.fill();label(x,f.kind==='edge'?'NEUTRON STAR · OR · BLACK HOLE':'NEUTRON STAR (PULSAR)',rx,sy+130,COL.ink2,'center')}
+    else{glowDot(x,rx,sy,80,'rgba(255,106,26,0.45)');x.fillStyle='#000';x.beginPath();x.arc(rx,sy,24,0,7);x.fill();x.strokeStyle=COL.flare;x.lineWidth=2;x.beginPath();x.arc(rx,sy,25,0,7);x.stroke();label(x,'BLACK HOLE',rx,sy+130,COL.crimson,'center')}
+    // ladder
+    const L=40,R=W-40,Y=H-56;const lx=m=>L+(Math.log10(m)+0.3)/(1.78+0.3)*(R-L);
+    [[0.5,8,'#2A2430','white dwarf'],[8,20,'#1E2638','neutron star'],[20,25,'#3A1E1A','?'],[25,60,COL.blood,'black hole']].forEach(([a,b,cl,t])=>{x.fillStyle=cl;x.fillRect(lx(a),Y,lx(b)-lx(a),16);label(x,t,(lx(a)+lx(b))/2,Y+32,COL.ink2,'center')});
+    [1,8,20,25,60].forEach(m=>label(x,m+'',lx(m),Y-6,COL.ink3,'center'));
+    x.fillStyle=COL.flare;const mx=lx(M);x.beginPath();x.moveTo(mx,Y-2);x.lineTo(mx-7,Y-14);x.lineTo(mx+7,Y-14);x.fill();
+    label(x,'BIRTH MASS (SUNS)',L,Y-22,COL.ink3);
+  }
+  sl.addEventListener('input',upd);upd();
+})();
+
+// ===================== 03-A S2 orbit =====================
+(function(){
+  const cv=$('cvS2');const {x,W,H}=prep(cv);const mS=$('s2M'),tS=$('s2T');
+  const a=1030,e=0.885,Mtrue=a**3/16.0**2,tp=2002.33;let playing=false;
+  function pos(t,M){const P=Math.sqrt(a**3/M);let Ma=2*Math.PI*((t-tp)/P);Ma=((Ma%(2*Math.PI))+2*Math.PI)%(2*Math.PI);let E=Ma;for(let i=0;i<30;i++)E-= (E-e*Math.sin(E)-Ma)/(1-e*Math.cos(E));return [a*(Math.cos(E)-e),a*Math.sqrt(1-e*e)*Math.sin(E)]}
+  const rot=-0.45,sc=0.215,ox=W*0.8,oy=H*0.4;
+  const P2=([u,v])=>{const X=u*Math.cos(rot)-v*Math.sin(rot),Y=u*Math.sin(rot)+v*Math.cos(rot);return [ox+X*sc,oy-Y*sc]};
+  const bg=document.createElement('canvas');bg.width=W;bg.height=H;stars(bg.getContext('2d'),W,H,140,23);
+  const obs=[];for(let y=2002;y<=2018;y++)obs.push([y+0.33,pos(y+0.33,Mtrue)]);
+  function draw(){const M=10**(+mS.value),t=+tS.value;x.clearRect(0,0,W,H);x.drawImage(bg,0,0,W,H);
+    // true orbit
+    x.strokeStyle='rgba(255,106,26,0.25)';x.lineWidth=1;x.beginPath();for(let i=0;i<=400;i++){const E=i/400*2*Math.PI;const q=P2([a*(Math.cos(E)-e),a*Math.sqrt(1-e*e)*Math.sin(E)]);i?x.lineTo(...q):x.moveTo(...q)}x.stroke();
+    obs.forEach(([y,p])=>{const q=P2(p);x.fillStyle=Math.abs(y-t)<0.5?COL.flare:'rgba(255,106,26,0.55)';x.save();x.translate(...q);x.rotate(Math.PI/4);x.fillRect(-4,-4,8,8);x.restore()});
+    {const q=P2(pos(2010.33,Mtrue));label(x,'2010',q[0]+8,q[1]-8,COL.ink3);const q2=P2(pos(2002.33,Mtrue));label(x,'closest: 2002, 2018',q2[0]-6,q2[1]+22,COL.ink3,'right');}
+    // black hole
+    glowDot(x,ox,oy,26,'rgba(224,48,42,0.55)');x.fillStyle='#000';x.beginPath();x.arc(ox,oy,5,0,7);x.fill();label(x,'SGR A*',ox-12,oy-12,COL.crimson,'right');
+    // model trail
+    x.strokeStyle='rgba(224,48,42,0.8)';x.lineWidth=2;x.beginPath();for(let k=0;k<=60;k++){const tt=Math.max(2002,t-1.5)+(t-Math.max(2002,t-1.5))*k/60;const q=P2(pos(tt,M));k?x.lineTo(...q):x.moveTo(...q)}x.stroke();
+    const q=P2(pos(t,M));glowDot(x,q[0],q[1],14,'rgba(255,80,60,0.8)');x.fillStyle='#fff';x.beginPath();x.arc(q[0],q[1],3,0,7);x.fill();
+    // scale bar
+    x.strokeStyle=COL.ink2;x.beginPath();x.moveTo(30,H-30);x.lineTo(30+1000*sc,H-30);x.stroke();label(x,'1000 AU',30,H-38,COL.ink2);
+    label(x,`YEAR ${t.toFixed(1)}`,20,26,COL.flare);
+    // fit
+    const P=Math.sqrt(a**3/M);$('s2Mo').textContent=sci(M,2)+' Suns';$('s2To').textContent=t.toFixed(1);$('s2P').textContent=P.toFixed(1)+' yr';
+    let res=0;obs.forEach(([y,p])=>{const m=pos(y,M);res+=Math.hypot(m[0]-p[0],m[1]-p[1])});res/=obs.length;
+    const st=$('s2Stat');if(Math.abs(M/Mtrue-1)<0.03){st.className='status good';st.textContent=`LOCKED ON. About ${sci(M,1)} Suns inside a region smaller than our Solar System. Only a black hole fits.`;}
+    else{st.className='status';st.textContent=`Off by ${res.toFixed(0)} AU on average. ${M<Mtrue?'Too light: the star moves too slowly.':'Too heavy: the star races ahead.'}`}
+  }
+  [mS,tS].forEach(s=>s.addEventListener('input',draw));
+  $('s2Play').addEventListener('click',()=>{playing=!playing;$('s2Play').textContent=playing?'❚❚ Pause':'▶ Play the years'});
+  animate(cv,(t,dt)=>{if(playing){let v=+tS.value+dt*2.2;if(v>18.5+2000)v=2002;tS.value=v;draw()}});
+  draw();
+})();
+
+// ===================== 03-B GW chirp =====================
+(function(){
+  const cv=$('cvGW');const {x,W,H}=prep(cv);const mS=$('gwM'),pS=$('gwP');let wave=null,ac=null,playStart=-1,playDur=0;
+  const f0=30;
+  function compute(){const Mc=+mS.value;const tM=G*Mc*Msun/c**3;const Mt=Mc*2**1.2;const fend=Math.min(2.5*4400/Mt,1500);
+    const tau=f=>5/256*Math.pow(tM,-5/3)*Math.pow(Math.PI*f,-8/3);const T0=tau(f0),Te=tau(fend);
+    $('gwMo').textContent=Mc+' M☉';$('gwDur').textContent=dur(T0-Te);$('gwF').textContent=Math.round(fend)+' Hz';$('gwPo').textContent='×'+pS.value;
+    wave={tM,T0,Te,fend,tau,f:tt=>Math.pow(5/(256*tt),3/8)*Math.pow(tM,-5/8)/Math.PI};draw();}
+  function draw(play){if(!wave)return;x.clearRect(0,0,W,H);const L=50,R=W-20,T=24,B=H-40;const {T0,Te,f}=wave;
+    x.strokeStyle=COL.line;x.beginPath();x.moveTo(L,(T+B)/2);x.lineTo(R,(T+B)/2);x.stroke();
+    // waveform sampled by phase
+    const N=2600;let ph=0;const span=T0-Te;let prev=null;x.strokeStyle=COL.ember;x.lineWidth=1.2;x.beginPath();
+    for(let i=0;i<=N;i++){const tt=T0-span*i/N;const fr=f(tt);if(i>0)ph+=2*Math.PI*fr*(span/N);const A=Math.pow(fr/wave.fend,2/3);const X=L+(R-L)*i/N*0.92;const Y=(T+B)/2-Math.sin(ph)*A*(B-T)/2*0.9;i?x.lineTo(X,Y):x.moveTo(X,Y)}
+    // ringdown
+    for(let i=1;i<=80;i++){const X=L+(R-L)*(0.92+0.08*i/80);const Y=(T+B)/2-Math.sin(ph+i*0.9)*Math.exp(-i/14)*(B-T)/2*0.9;x.lineTo(X,Y)}x.stroke();
+    // freq track
+    x.strokeStyle='rgba(255,169,77,0.5)';x.setLineDash([3,4]);x.beginPath();for(let i=0;i<=200;i++){const tt=T0-span*i/200;const fr=f(tt);const X=L+(R-L)*i/200*0.92;const Y=B-(Math.log(fr/f0)/Math.log(wave.fend/f0))*(B-T);i?x.lineTo(X,Y):x.moveTo(X,Y)}x.stroke();x.setLineDash([]);
+    label(x,'strain',L,T+8,COL.ink3);label(x,`${Math.round(wave.fend)} Hz`,R,T+10,COL.flare,'right');label(x,'30 Hz',L+4,B-6,COL.flare);
+    label(x,`← ${dur(span)} before merger`,L,H-12,COL.ink2);label(x,'MERGER',L+(R-L)*0.92,H-12,COL.crimson,'center');
+    if(play!==undefined){const X=L+(R-L)*0.92*play;x.strokeStyle=COL.ink;x.lineWidth=1;x.beginPath();x.moveTo(X,T);x.lineTo(X,B);x.stroke()}
+  }
+  function playChirp(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();}catch(e){return}
+    if(ac.state==='suspended')ac.resume();
+    const sr=ac.sampleRate,p=+pS.value;const {T0,Te,f}=wave;const span=Math.min(T0-Te,12);const Tstart=Te+span;
+    const ring=0.08,n=Math.floor((span+ring)*sr);const buf=ac.createBuffer(1,n,sr);const d=buf.getChannelData(0);let ph=0;
+    for(let i=0;i<n;i++){const t=i/sr;let s;if(t<span){const tt=Tstart-t;const fr=f(tt)*p;ph+=2*Math.PI*fr/sr;const A=Math.pow(fr/(wave.fend*p),2/3);s=Math.sin(ph)*A}else{const tr=t-span;ph+=2*Math.PI*wave.fend*p/sr;s=Math.sin(ph)*Math.exp(-tr/0.012)}
+      const fade=Math.min(1,t/0.05);d[i]=s*0.5*fade}
+    const src=ac.createBufferSource();src.buffer=buf;src.connect(ac.destination);src.start();playStart=performance.now()/1000;playDur=span+ring;
+  }
+  $('gwPlay').addEventListener('click',playChirp);
+  [mS,pS].forEach(s=>s.addEventListener('input',()=>{document.querySelectorAll('#instGW .chip').forEach(b=>b.setAttribute('aria-pressed','false'));compute()}));
+  document.querySelectorAll('#instGW .chip').forEach(b=>b.addEventListener('click',()=>{mS.value=b.dataset.v;document.querySelectorAll('#instGW .chip').forEach(z=>z.setAttribute('aria-pressed',z===b?'true':'false'));compute()}));
+  animate(cv,t=>{if(playStart>0){const u=(performance.now()/1000-playStart)/playDur;if(u>1){playStart=-1;draw()}else{const span=wave.T0-wave.Te;const shown=Math.min(span,12);draw(1-(shown*(1-u))/span)}}});
+  compute();
+})();
+
+// ===================== 03-C EHT shadow =====================
+(function(){
+  const cv=$('cvEHT');const {x,W,H}=prep(cv);const sl=$('ehtM');
+  const T={m87:{M:6.5e9,D:16.8*3.086e22,obs:42,err:3,n:'M87*'},sgra:{M:4.0e6,D:8.15*3.086e19,obs:51.8,err:2.3,n:'Sgr A*'}};let k='m87';
+  function upd(){const t=T[k];const M=t.M*10**(+sl.value);const th=2*Math.sqrt(27)*G*M*Msun/(c*c*t.D)*206265e6;
+    $('ehtMo').textContent=sci(M,2)+' Suns';$('ehtP').textContent=th.toFixed(1)+' μas';$('ehtO').textContent=t.obs+' ± '+t.err+' μas';
+    const st=$('ehtStat');if(Math.abs(th-t.obs)<=1.5*t.err){st.className='status good';st.textContent=`MATCH. General relativity predicts this ring from ${t.n}’s mass alone.`}else{st.className='status';st.textContent=th<t.obs?'Predicted ring too small. Increase the mass.':'Predicted ring too large. Decrease the mass.'}
+    draw(th,t)}
+  function draw(th,t){x.clearRect(0,0,W,H);x.fillStyle='#030202';x.fillRect(0,0,W,H);const X=W/2,Y=H/2,s=3.1;const R=t.obs/2*s;
+    // synthetic ring image
+    for(let i=0;i<360;i+=2){const a=i*Math.PI/180;const br=0.55+0.45*Math.cos(a-(k==='m87'?Math.PI/2+0.6:Math.PI*1.2));glowDot(x,X+R*Math.cos(a),Y+R*Math.sin(a),R*0.42,`rgba(255,${(110+90*br)|0},${(30*br)|0},0.09)`,br)}
+    glowDot(x,X,Y,R*0.6,'rgba(0,0,0,0.9)');
+    x.setLineDash([6,5]);x.strokeStyle=COL.ink;x.lineWidth=1.6;x.beginPath();x.arc(X,Y,th/2*s,0,7);x.stroke();x.setLineDash([]);
+    label(x,'dashed: your prediction',16,H-16,COL.ink);label(x,`${t.n} · synthetic ring at measured size`,16,24,COL.ink2);
+    x.strokeStyle=COL.ink2;x.beginPath();x.moveTo(W-16-20*s,H-22);x.lineTo(W-16,H-22);x.stroke();label(x,'20 μas',W-16,H-30,COL.ink2,'right');
+  }
+  sl.addEventListener('input',upd);chipGroup('ehtT',b=>{k=b.dataset.t;sl.value=0;upd()});upd();
+})();
+
+// ===================== 04-A Kerr =====================
+(function(){
+  const cv=$('cvKerr');const {x,W,H}=prep(cv);const sl=$('krA');const X=W*0.46,Y=H/2,s=27;
+  const dots=[];for(let i=0;i<170;i++)dots.push({r:1.2+Math.pow(Math.random(),0.8)*9.3,a:Math.random()*7});
+  const bg=document.createElement('canvas');bg.width=W;bg.height=H;stars(bg.getContext('2d'),W,H,120,41);
+  function isco(a,pro){const Z1=1+Math.cbrt(1-a*a)*(Math.cbrt(1+a)+Math.cbrt(1-a));const Z2=Math.sqrt(3*a*a+Z1*Z1);return 3+Z2+(pro?-1:1)*Math.sqrt((3-Z1)*(3+Z1+2*Z2))}
+  const rph=(a,pro)=>2*(1+Math.cos(2/3*Math.acos(pro?-a:a)));
+  let A=0.6,rp=0,ri=0,ro=0;
+  function upd(){A=+sl.value;rp=1+Math.sqrt(1-A*A);ri=isco(A,true);ro=isco(A,false);const eta=1-Math.sqrt(1-2/(3*ri));
+    $('krAo').textContent=A.toFixed(3);$('krH').textContent=rp.toFixed(2)+' GM/c²';$('krI').textContent=ri.toFixed(2)+' GM/c²';$('krE').textContent=(eta*100).toFixed(1)+'%';$('krX').textContent='×'+(eta/0.007).toFixed(0)+' fusion';}
+  function ring(r,col,dash,lab,ang){x.strokeStyle=col;x.lineWidth=1.5;x.setLineDash(dash||[]);x.beginPath();x.arc(X,Y,r*s,0,7);x.stroke();x.setLineDash([]);if(lab){const a=ang||-0.6;label(x,lab,X+Math.cos(a)*r*s+6,Y+Math.sin(a)*r*s,col)}}
+  function draw(t,dt){x.clearRect(0,0,W,H);x.drawImage(bg,0,0,W,H);
+    // ergosphere
+    x.fillStyle='rgba(255,106,26,0.16)';x.beginPath();x.arc(X,Y,2*s,0,7);x.arc(X,Y,rp*s,0,7,true);x.fill();
+    ring(2,COL.ember,null);ring(ri,COL.flare,[5,4]);ring(ro,'rgba(255,169,77,0.5)',[2,5]);ring(rph(A,true),'rgba(224,48,42,0.9)',[1,3]);
+    [[COL.ember,null,'ergosphere edge'],['rgba(224,48,42,0.9)',[1,3],'photon orbit'],[COL.flare,[5,4],'last stable orbit, with spin'],['rgba(255,169,77,0.5)',[2,5],'last stable orbit, against'],[COL.crimson,null,'horizon']].forEach(([cl,d,t],i)=>{const yy=48+i*20;x.strokeStyle=cl;x.lineWidth=2;x.setLineDash(d||[]);x.beginPath();x.moveTo(W-232,yy);x.lineTo(W-206,yy);x.stroke();x.setLineDash([]);label(x,t,W-198,yy+4,COL.ink2)});
+    dots.forEach(d=>{if(d.r<rp+0.05)d.r=rp+0.1+Math.random()*8;const r=d.r;const om=2*A*r/(r**3+A*A*r+2*A*A);const kep=1/(Math.pow(r,1.5)+A);
+      const w=(0.15*kep+3.2*om)*(REDUCED?0:1);d.a+=w*dt*2.2;const inErgo=r<2;x.fillStyle=inErgo?COL.flare:'rgba(242,231,222,0.55)';x.fillRect(X+Math.cos(d.a)*r*s-1,Y+Math.sin(d.a)*r*s-1,inErgo?2.5:2,inErgo?2.5:2)});
+    glowDot(x,X,Y,rp*s*1.8,'rgba(224,48,42,0.5)');x.fillStyle='#000';x.beginPath();x.arc(X,Y,rp*s,0,7);x.fill();x.strokeStyle=COL.crimson;x.lineWidth=2;x.beginPath();x.arc(X,Y,rp*s,0,7);x.stroke();
+    // spin arrow
+    x.strokeStyle=COL.flare;x.lineWidth=2;x.beginPath();x.arc(X,Y,rp*s*0.55,-2.2,-2.2+4.5*Math.max(A,0.05));x.stroke();
+    label(x,`SPIN a = ${A.toFixed(3)}`,16,24,COL.flare);
+    x.strokeStyle=COL.ink2;x.beginPath();x.moveTo(16,H-22);x.lineTo(16+5*s,H-22);x.stroke();label(x,'5 GM/c²',16,H-30,COL.ink2);
+  }
+  sl.addEventListener('input',()=>{upd();draw(0,0)});chipGroup('krPre',b=>{sl.value=b.dataset.v;upd();draw(0,0)});upd();draw(0,0);animate(cv,draw);
+})();
+
+// ===================== 05-A Hawking thermometer =====================
+(function(){
+  const cv=$('cvHawk');const {x,W,H}=prep(cv);const sl=$('hkM');
+  const marks=[[1e-9,'coldest lab gas'],[2.725,'CMB 2.7 K'],[5772,'Sun’s surface'],[1.5e7,'Sun’s core'],[5e12,'quark-gluon plasma']];
+  function band(T){const l=2.898e-3/T;if(l>1)return 'radio, λ ≈ '+len(l);if(l>1e-3)return 'microwaves';if(l>7e-7)return 'infrared';if(l>4e-7)return 'visible light';if(l>1e-8)return 'ultraviolet';if(l>1e-11)return 'X-rays';return 'gamma rays'}
+  function upd(){const M=10**(+sl.value);const T=1.227e23/M;const rs=1.485e-27*M;const life=8.41e-17*M**3;
+    $('hkMo').textContent=M>=1e28?mass(M):sci(M)+' kg';$('hkT').textContent=sci(T)+' K';$('hkR').textContent=rs<1e-6?sci(rs)+' m':len(rs);$('hkL').textContent=band(T);
+    const age=4.35e17;$('hkLife').textContent=life>age?dur(life)+(life>1e3*age?'':'')+' ('+sci(life/age,1)+'× age of universe)':dur(life);
+    draw(T)}
+  function draw(T){x.clearRect(0,0,W,H);const L=40,R=W-30,Y=H-90;const lx=t=>L+(Math.log10(t)+16)/35*(R-L);
+    const g=x.createLinearGradient(L,0,R,0);g.addColorStop(0,'#1A0A14');g.addColorStop(0.45,COL.blood);g.addColorStop(0.75,COL.ember);g.addColorStop(1,'#FFE9C9');x.fillStyle=g;x.fillRect(L,Y,R-L,10);
+    for(let e=-15;e<=18;e+=3){label(x,'10'+sup(e),lx(10**e),Y+28,COL.ink3,'center')}label(x,'KELVIN',R,Y+46,COL.ink3,'right');
+    marks.forEach(([t,n],i)=>{const X=lx(t);x.strokeStyle=COL.ink3;x.beginPath();x.moveTo(X,Y-4);x.lineTo(X,Y-18-(i%2)*16);x.stroke();label(x,n,X,Y-22-(i%2)*16,COL.ink2,'center')});
+    const X=Math.max(L,Math.min(R,lx(T)));x.fillStyle=COL.flare;x.beginPath();x.moveTo(X,Y+12);x.lineTo(X-8,Y+26);x.lineTo(X+8,Y+26);x.fill();
+    // glowing hole
+    const hot=Math.max(0,Math.min(1,(Math.log10(T)+10)/26));const cx=W/2,cy=96;
+    glowDot(x,cx,cy,40+hot*90,`rgba(255,${(90+120*hot)|0},${(40*hot)|0},${0.15+0.7*hot})`);x.fillStyle='#000';x.beginPath();x.arc(cx,cy,26,0,7);x.fill();x.strokeStyle=hot>0.2?COL.flare:COL.line2;x.lineWidth=1.5;x.beginPath();x.arc(cx,cy,27,0,7);x.stroke();
+    label(x,T<2.725?'COLDER THAN SPACE: STILL GROWING':'HOTTER THAN SPACE: EVAPORATING',cx,cy+56,T<2.725?COL.ink2:COL.crimson,'center');
+  }
+  sl.addEventListener('input',upd);chipGroup('hkPre',b=>{sl.value=b.dataset.v;upd()});upd();
+})();
+
+// ===================== 05-B Page curve =====================
+(function(){
+  const cv=$('cvPage');const {x,W,H}=prep(cv);const sl=$('pgT');const tP=1-Math.pow(4/7,1.5);
+  const SB=t=>Math.pow(1-t,2/3),SH=t=>4/3*(1-SB(t)),SP=t=>Math.min(SH(t),SB(t));
+  function upd(){const t=+sl.value;$('pgTo').textContent=(100*t).toFixed(0)+'%';$('pgM').textContent=(100*Math.cbrt(1-t)).toFixed(0)+'% of start';$('pgH').textContent=SH(t).toFixed(2)+' (rising)';$('pgP').textContent=SP(t).toFixed(2)+(t>tP?' (falling)':' (rising)');
+    const st=$('pgStat');if(t<tP){st.className='status';st.textContent='Before the Page time the two answers agree.'}else{st.className='status alert';st.textContent='After the Page time they disagree. If information survives, the radiation must start to purify. This is the paradox.'}
+    draw(t)}
+  function draw(t){x.clearRect(0,0,W,H);const L=52,R=W-20,T=20,B=H-44;const X=u=>L+u*(R-L),Y=v=>B-v/1.45*(B-T);
+    [0,0.5,1].forEach(v=>{x.strokeStyle=COL.line;x.beginPath();x.moveTo(L,Y(v));x.lineTo(R,Y(v));x.stroke();label(x,String(v),L-8,Y(v)+4,COL.ink3,'right')});
+    const path=(f,col,w,dash,upto=1)=>{x.strokeStyle=col;x.lineWidth=w;x.setLineDash(dash||[]);x.beginPath();for(let i=0;i<=300;i++){const u=i/300*upto;i?x.lineTo(X(u),Y(f(u))):x.moveTo(X(u),Y(f(u)))}x.stroke();x.setLineDash([])};
+    path(SB,COL.ink3,1.5,[5,5]);path(SH,'rgba(224,48,42,0.35)',2);path(SP,'rgba(255,106,26,0.35)',3);
+    path(SH,COL.crimson,2,null,t);path(SP,COL.ember,3.5,null,t);
+    x.strokeStyle=COL.ink2;x.setLineDash([2,4]);x.beginPath();x.moveTo(X(tP),T);x.lineTo(X(tP),B);x.stroke();x.setLineDash([]);label(x,'PAGE TIME',X(tP)+6,T+12,COL.ink2);
+    x.strokeStyle=COL.ink;x.beginPath();x.moveTo(X(t),T);x.lineTo(X(t),B);x.stroke();
+    label(x,'Hawking',X(0.97),Y(SH(0.97))-10,COL.crimson,'right');label(x,'Page curve',X(0.86),Y(SP(0.86))-12,COL.ember,'right');label(x,'black hole’s own entropy',X(0.03),Y(SB(0.03))-8,COL.ink3);
+    label(x,'time →',R,H-14,COL.ink3,'right');label(x,'evaporated',X(1),H-28,COL.ink3,'right');
+  }
+  sl.addEventListener('input',upd);upd();
+})();
+
+// ===================== 06-A Holographic drive =====================
+(function(){
+  const cv=$('cvHolo');const {x,W,H}=prep(cv);const sl=$('hoR');
+  const refs=[[6.2e9,'human genome'],[8e12,'1 TB drive'],[1.2e40,'proton bound'],[7e83,'Earth bound'],[3e123,'observable universe']];
+  function upd(){const r=10**(+sl.value);const bits=Math.PI*r*r/(lP2*Math.LN2);
+    $('hoRo').textContent=r<1e-3?sci(r)+' m':len(r);$('hoB').textContent=sci(bits)+' bits';$('hoT').textContent=sci(bits/8e12);
+    const st=$('hoStat');st.className='status';st.textContent=`That is ${sci(bits/6.2e9,1)} complete human genomes, all written on the surface of a ${r<1e-3?sci(r)+' m':len(r)} sphere.`;
+    draw(bits)}
+  function draw(bits){x.clearRect(0,0,W,H);const cx=150,cy=135,R=95;
+    // sphere with surface grid
+    const g=x.createRadialGradient(cx-30,cy-30,10,cx,cy,R);g.addColorStop(0,'#2A0E0A');g.addColorStop(1,'#080303');x.fillStyle=g;x.beginPath();x.arc(cx,cy,R,0,7);x.fill();
+    x.save();x.beginPath();x.arc(cx,cy,R,0,7);x.clip();x.strokeStyle='rgba(255,106,26,0.45)';x.lineWidth=0.8;
+    for(let i=-8;i<=8;i++){const yy=cy+i*R/8.5;const w=Math.sqrt(Math.max(0,R*R-(yy-cy)**2));x.beginPath();x.ellipse(cx,yy,w,w*0.12,0,0,7);x.stroke()}
+    for(let i=0;i<10;i++){x.beginPath();x.ellipse(cx,cy,R*Math.abs(Math.cos(i/10*Math.PI)),R,0,0,7);x.stroke()}
+    x.restore();x.strokeStyle=COL.flare;x.lineWidth=1.5;x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();
+    label(x,'information lives on the surface',cx,cy+R+22,COL.ink2,'center');
+    // log bar
+    const L=300,Rr=W-24,Y0=40,Y1=H-30;const ly=b=>Y1-(Math.log10(b)/125)*(Y1-Y0);
+    x.fillStyle=COL.line;x.fillRect(L,Y0,6,Y1-Y0);
+    refs.forEach(([b,n],i)=>{const Y=ly(b);const dy=i===0?12:i===1?-6:4;x.strokeStyle=COL.ink3;x.beginPath();x.moveTo(L,Y);x.lineTo(L+20,Y+dy-4);x.stroke();label(x,`${n} · 10${sup(Math.round(Math.log10(b)))}`,L+26,Y+dy,COL.ink2)});
+    const Y=ly(Math.max(1,bits));x.fillStyle=COL.ember;x.fillRect(L,Y,6,Y1-Y);x.beginPath();x.moveTo(L-4,Y);x.lineTo(L-14,Y-7);x.lineTo(L-14,Y+7);x.fill();
+    label(x,'YOUR SPHERE',L-18,Y-10,COL.flare,'right');label(x,'BITS (LOG SCALE)',L,Y0-14,COL.ink3);
+  }
+  sl.addEventListener('input',upd);chipGroup('hoPre',b=>{sl.value=b.dataset.v;upd()});upd();
+})();
+
+
+// ===================== real GW150914 audio =====================
+(function(){
+  const FS=4096,B64="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";let ac=null,buf=null;
+  function make(){ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();
+    if(!buf){const bin=atob(B64);const n=bin.length/2;const dv=new DataView(new ArrayBuffer(bin.length));for(let i=0;i<bin.length;i++)dv.setUint8(i,bin.charCodeAt(i));
+      buf=ac.createBuffer(1,n,FS);const d=buf.getChannelData(0);for(let i=0;i<n;i++)d[i]=dv.getInt16(2*i,true)/32768;}
+    return buf}
+  function play(rate){try{const b=make();const s=ac.createBufferSource();s.buffer=b;s.playbackRate.value=rate;s.connect(ac.destination);s.start()}catch(e){}}
+  const b1=$('gwReal'),b2=$('gwReal2');if(b1)b1.addEventListener('click',()=>play(1));if(b2)b2.addEventListener('click',()=>play(4));
+})();
+
+// ===================== Quizzes, badges, progress =====================
+const QZ={
+1:[{q:'What is the event horizon?',o:['A solid surface made of crushed matter','The boundary inside which every path leads inward, so not even light escapes','The bright ring seen in telescope images'],a:1,e:'There is nothing solid there. It is a one-way boundary in spacetime.'},
+   {q:'Roughly how small would Earth have to be squeezed to become a black hole?',o:['About 3 km across','About the size of a marble (9 mm radius)','About the size of the Moon'],a:1,e:'r_s = 2GM/c² ≈ 9 mm for Earth’s mass. The 3 km figure is for the Sun.'},
+   {q:'Which black hole would stretch you least at its horizon?',o:['A 10-Sun black hole','The 4-million-Sun Sgr A*','They are all the same'],a:1,e:'The horizon tide falls as 1/M². Big black holes have gentle horizons.'}],
+2:[{q:'What finally decides whether a dying star becomes a black hole?',o:['Its colour','The mass of its collapsing core','How fast it was born'],a:1,e:'Above about 2–3 Suns of core, neither electron nor neutron pressure can stop the collapse.'},
+   {q:'The Chandrasekhar limit (≈1.4 Suns) is the maximum mass of a…',o:['white dwarf','neutron star','black hole'],a:0,e:'It comes from the quantum pressure of electrons. Neutron stars have their own, higher limit.'},
+   {q:'As black holes get heavier, their average density inside the horizon…',o:['increases','stays the same','decreases'],a:2,e:'Density ∝ 1/M². M87*’s is thinner than air.'}],
+3:[{q:'How was the mass of Sagittarius A* measured?',o:['From the brightness of its glow','From the orbits of stars like S2 around it','From its sound'],a:1,e:'Kepler’s third law: orbital size and period give the mass. About 4.3 million Suns.'},
+   {q:'Why does a gravitational-wave signal “chirp” upward in pitch?',o:['The detector heats up','The orbit shrinks and speeds up as energy is radiated away','The waves are Doppler-shifted by Earth’s rotation'],a:1,e:'Losing energy to gravitational waves makes the pair spiral closer, faster and faster.'},
+   {q:'The dark centre in the EHT images is…',o:['exactly the event horizon','the shadow, about 2.6 times larger than the horizon','a cloud of dust'],a:1,e:'Light bends around the hole, so its silhouette is magnified to √27 GM/c² in radius.'}],
+4:[{q:'How many numbers describe a real (uncharged) black hole completely?',o:['Two: mass and spin','Dozens, like a star','Only its mass'],a:0,e:'Kerr’s solution: mass and spin say it all. This is the “no-hair” idea.'},
+   {q:'In the ergosphere of a spinning black hole…',o:['you are already trapped forever','nothing can stand still; space itself is dragged around','time stops'],a:1,e:'You can still escape from the ergosphere, but you can’t stay at rest there.'},
+   {q:'Why can a spinning black hole’s disk shine more efficiently?',o:['It is hotter outside','Gas can orbit closer before plunging, releasing up to 42% of its mass-energy','Spin creates new matter'],a:1,e:'The innermost stable orbit moves inward with spin, so more energy is radiated first.'}],
+5:[{q:'A bigger black hole’s Hawking temperature is…',o:['higher','lower','the same'],a:1,e:'T ∝ 1/M. Stellar black holes are far colder than the cosmic microwave background.'},
+   {q:'What is the information paradox about?',o:['Black holes being too heavy','Whether the details of what fell in survive once the black hole evaporates','Telescopes losing data'],a:1,e:'Hawking’s radiation looks featureless. Quantum mechanics says information can’t be destroyed.'},
+   {q:'The Page curve says the entanglement of the radiation should…',o:['rise forever','rise, then fall back to zero','stay at zero'],a:1,e:'If information survives, the final radiation is pure. The turnover happens at the Page time.'}],
+6:[{q:'The most information a region can hold grows with its…',o:['volume','boundary area','mass only'],a:1,e:'This is the holographic bound, set by black-hole entropy S = A/4ℓ_P².'},
+   {q:'ER = EPR suggests a link between wormholes and…',o:['dark matter','quantum entanglement','neutron stars'],a:1,e:'Einstein–Rosen bridges and Einstein–Podolsky–Rosen pairs may be two views of the same thing.'},
+   {q:'In 2025, the merger signal GW250114 confirmed that…',o:['black holes have hair','the total horizon area grew in the merger, as Hawking predicted','black holes are made of strings'],a:1,e:'Hawking’s 1971 area theorem: classically, horizon area never decreases.'}]};
+const BADGE={1:'HORIZON CERTIFIED',2:'STARFORGER',3:'SIGNAL HUNTER',4:'FRAME DRAGGER',5:'HAWKING-PROOF',6:'HOLOGRAPHER'};
+let DONE={};try{DONE=JSON.parse(localStorage.getItem('ehfm-v1')||'{}')}catch(e){DONE={}}
+function save(){try{localStorage.setItem('ehfm-v1',JSON.stringify(DONE))}catch(e){}}
+function refresh(){const n=Object.keys(BADGE).filter(k=>DONE[k]).length;$('syncN').textContent=n+'/6';$('syncBar').style.width=(n/6*100)+'%';
+  document.querySelectorAll('.hud nav a').forEach(a=>a.classList.toggle('done',!!DONE[a.dataset.m]));
+  $('badges').innerHTML=Object.entries(BADGE).map(([k,v])=>`<div class="bdg ${DONE[k]?'on':''}"><span class="ic">0${k}</span>${DONE[k]?v:'LOCKED'}</div>`).join('');
+  $('finalMsg').textContent=n===6?'ALL SYSTEMS SYNCED. You now know more about black holes than most of humanity did in 2010.':`Pass the calibration check in each module to unlock its badge. ${6-n} to go.`;
+  document.querySelectorAll('.calib').forEach(c=>{const m=$('bm'+c.dataset.quiz);if(m&&DONE[c.dataset.quiz]){m.textContent='BADGE UNLOCKED · '+BADGE[c.dataset.quiz];m.classList.add('won')}});}
+document.querySelectorAll('.calib').forEach(box=>{const k=box.dataset.quiz;const qs=QZ[k];
+  function build(){let right=0,ans=0;
+    box.innerHTML=`<div class="ihead"><span><span class="led" style="display:inline-block;margin-right:8px"></span><b>CALIBRATION ${'0'+k}</b> · 3 QUESTIONS</span><span class="badge-msg" id="bm${k}">ANSWER ALL THREE CORRECTLY TO UNLOCK “${BADGE[k]}”</span></div><div class="qwrap"></div>`;
+    const w=box.querySelector('.qwrap');
+    qs.forEach((Q,i)=>{const d=document.createElement('div');d.className='q';d.innerHTML=`<p class="s">${i+1}. ${Q.q}</p><div class="opts">${Q.o.map((o,j)=>`<button type="button" data-j="${j}">${o}</button>`).join('')}</div><div class="fb" hidden></div>`;
+      d.querySelector('.opts').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const j=+b.dataset.j;ans++;if(j===Q.a)right++;
+        d.querySelectorAll('button').forEach((z,zi)=>{z.disabled=true;if(zi===Q.a)z.classList.add('ok');else if(zi===j)z.classList.add('no')});
+        const fb=d.querySelector('.fb');fb.hidden=false;fb.textContent=(j===Q.a?'Correct. ':'Not quite. ')+Q.e;
+        if(ans===qs.length){if(right===qs.length){DONE[k]=1;save();refresh()}else{const r=document.createElement('button');r.type='button';r.className='chip';r.textContent=`${right}/3 correct · retry calibration`;r.style.justifySelf='start';r.onclick=build;w.appendChild(r)}}});
+      w.appendChild(d)});
+    if(DONE[k]){const m=$('bm'+k);m.textContent='BADGE UNLOCKED · '+BADGE[k];m.classList.add('won')}
+  }
+  build();});
+refresh();
+
+</script>
+</body>
+</html>
